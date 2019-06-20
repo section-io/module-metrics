@@ -39,7 +39,7 @@ func CreateLogFifo(path string) error {
 
 // OpenReadFifo opens the fifo file for reading, returning the reader
 func OpenReadFifo(path string) (io.Reader, error) {
-	file, err := os.OpenFile(path, os.O_RDONLY, os.ModeNamedPipe)
+	file, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NONBLOCK, os.ModeNamedPipe)
 	if err != nil {
 		return nil, errors.Wrapf(err, "OpenReadFifo %s failed: %v", path, err)
 	}
