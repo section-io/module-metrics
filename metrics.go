@@ -37,7 +37,7 @@ func CreateLogFifo(path string) error {
 	return nil
 }
 
-//OpenReadFifo opens the fifo file for reading, returning the reader
+// OpenReadFifo opens the fifo file for reading, returning the reader
 func OpenReadFifo(path string) (io.Reader, error) {
 	file, err := os.OpenFile(path, os.O_RDONLY, os.ModeNamedPipe)
 	if err != nil {
@@ -47,8 +47,8 @@ func OpenReadFifo(path string) (io.Reader, error) {
 	return file, nil
 }
 
-//OpenWriteFifo opens the fifo file for writing, returning the writer
-func OpenWriteFifo(path string) (io.Reader, error) {
+// OpenWriteFifo opens the fifo file for writing, returning the writer
+func OpenWriteFifo(path string) (io.Writer, error) {
 	file, err := os.OpenFile(path, os.O_RDWR, os.ModeNamedPipe)
 	if err != nil {
 		return nil, errors.Wrapf(err, "OpenWriteFifo %s failed: %v", path, err)
@@ -57,7 +57,10 @@ func OpenWriteFifo(path string) (io.Reader, error) {
 	return file, nil
 }
 
-func StartReader(file io.Reader, output io.Writer) {
+// StartReader starts a loop in a goroutine that reads from the fifo file and writes out to the
+// output file. Any errors regarding parsing the log line are written to the errorWriter (eg os.Stderr)
+// but do not panic.
+func StartReader(file io.Reader, output io.Writer, errorWriter io.Writer) {
 	go func() {
 
 		reader := bufio.NewReader(file)
