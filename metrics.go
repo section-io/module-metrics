@@ -3,11 +3,10 @@ package metrics //import section.io/module-metrics
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"io"
-	"log"
 	"os"
 	"syscall"
-	"time"
 
 	"github.com/pkg/errors"
 )
@@ -69,24 +68,22 @@ func StartReader(file io.Reader, output io.Writer, errorWriter io.Writer) {
 
 			_, writeErr := output.Write(line)
 			if writeErr != nil {
-				log.Printf("Writing to output failed: %v", writeErr)
+				panic(errors.Wrapf(writeErr, "Writing to output failed"))
 			}
 
 			var logline LogLine
 			jsonErr := json.Unmarshal(line, &logline)
 			if jsonErr != nil {
-				log.Printf("json.Unmarshal failed: %v", jsonErr)
+				fmt.Fprintf(errorWriter, "json.Unmarshal failed: %v", jsonErr)
 			}
 
-			log.Printf("Bytes: %d, Status: %s", logline.Bytes, logline.Status)
-
-			time.Sleep(time.Second * 1)
+			fmt.Fprintf(errorWriter, "Bytes: %d, Status: %s", logline.Bytes, logline.Status)
 
 			line, err = reader.ReadBytes('\n')
 		}
 
 		if err != nil {
-			log.Fatalf("ReadBytes failed: %v", err)
+			panic(errors.Wrapf(err, "ReadBytes failed"))
 		}
 	}()
 }
