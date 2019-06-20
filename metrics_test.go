@@ -10,7 +10,6 @@ import (
 
 func TestCreateLogFifo(t *testing.T) {
 	path := "/tmp/TestCreateLogFifo-file"
-	expectedMode := "prw-rw-rw-"
 	err := CreateLogFifo(path)
 	if err != nil {
 		t.Error(err)
@@ -22,8 +21,8 @@ func TestCreateLogFifo(t *testing.T) {
 	}
 
 	mode := fileinfo.Mode()
-	if mode.String() != expectedMode {
-		t.Errorf("Mode of file %s is %s, not expected %s", path, mode, expectedMode)
+	if mode&os.ModeNamedPipe != os.ModeNamedPipe {
+		t.Errorf("Mode of file %s is %s does not have expected %s", path, mode, os.ModeNamedPipe)
 	}
 
 	os.Remove(path)
