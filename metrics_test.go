@@ -25,7 +25,10 @@ func TestCreateLogFifo(t *testing.T) {
 		t.Errorf("Mode of file %s is %s does not have expected %s", path, mode, os.ModeNamedPipe)
 	}
 
-	os.Remove(path)
+	err = os.Remove(path)
+	if err != nil {
+		t.Errorf("Error removing %s: %#v", path, err)
+	}
 }
 
 func TestCreateLogFifoFails(t *testing.T) {
@@ -74,7 +77,10 @@ func TestLogsOutputEqualsInput(t *testing.T) {
 	StartReader(reader, &stdout, os.Stderr)
 
 	for _, line := range logs {
-		writer.Write([]byte(line + "\n"))
+		_, err = writer.Write([]byte(line + "\n"))
+		if err != nil {
+			t.Errorf("Error writing line: %#v", err)
+		}
 	}
 
 	//Give the reader loop time to finish
@@ -88,5 +94,8 @@ func TestLogsOutputEqualsInput(t *testing.T) {
 		}
 	}
 
-	os.Remove(path)
+	err = os.Remove(path)
+	if err != nil {
+		t.Errorf("Error removing %s: %#v", path, err)
+	}
 }

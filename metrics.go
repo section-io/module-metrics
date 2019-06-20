@@ -11,11 +11,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	DefaultFifoFilePath = "/run/section-logs.pipe"
-)
-
-type LogLine struct {
+type logLine struct {
 	Status string `json:"status"`
 	Bytes  int    `json:"bytes,string"`
 }
@@ -71,13 +67,13 @@ func StartReader(file io.Reader, output io.Writer, errorWriter io.Writer) {
 				panic(errors.Wrapf(writeErr, "Writing to output failed"))
 			}
 
-			var logline LogLine
+			var logline logLine
 			jsonErr := json.Unmarshal(line, &logline)
 			if jsonErr != nil {
-				fmt.Fprintf(errorWriter, "json.Unmarshal failed: %v", jsonErr)
+				_, _ = fmt.Fprintf(errorWriter, "json.Unmarshal failed: %v", jsonErr)
 			}
 
-			fmt.Fprintf(errorWriter, "Bytes: %d, Status: %s", logline.Bytes, logline.Status)
+			_, _ = fmt.Fprintf(errorWriter, "Bytes: %d, Status: %s", logline.Bytes, logline.Status)
 
 			line, err = reader.ReadBytes('\n')
 		}
