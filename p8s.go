@@ -33,19 +33,23 @@ func addRequest(hostname string, status string, bytes int) {
 }
 
 func initMetrics(promeNamespace string) {
-	requestsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: promeNamespace,
-		Subsystem: promeSubsystem,
-		Name:      "request_count_total",
-		Help:      "Total count of HTTP requests.",
-	}, p8sLabels)
+	if requestsTotal == nil && bytesTotal == nil {
+		requestsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: promeNamespace,
+			Subsystem: promeSubsystem,
+			Name:      "request_count_total",
+			Help:      "Total count of HTTP requests.",
+		}, p8sLabels)
 
-	bytesTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: promeNamespace,
-		Subsystem: promeSubsystem,
-		Name:      "bytes_total",
-		Help:      "Total sum of response bytes.",
-	}, p8sLabels)
+		bytesTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: promeNamespace,
+			Subsystem: promeSubsystem,
+			Name:      "bytes_total",
+			Help:      "Total sum of response bytes.",
+		}, p8sLabels)
+
+		prometheus.MustRegister(requestsTotal, bytesTotal)
+	}
 }
 
 func StartPrometheusServer() {
@@ -61,8 +65,6 @@ func StartPrometheusServer() {
 	}
 
 	MetricsURI = fmt.Sprintf("http://%s:%s%s", metricsAddress, metricsPort, metricsPath)
-
-	prometheus.MustRegister(requestsTotal, bytesTotal)
 
 	http.Handle(metricsPath, promhttp.Handler())
 	go func() {

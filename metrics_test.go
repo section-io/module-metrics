@@ -150,8 +150,6 @@ func TestCountersIncrease(t *testing.T) {
 	//Give the reader loop time to finish
 	time.Sleep(time.Second * 1)
 
-	prometheus.MustRegister(requestsTotal, bytesTotal)
-
 	gathering, err := prometheus.DefaultGatherer.Gather()
 	if err != nil {
 		t.Errorf("Error in prometheus Gather: %#v", err)
