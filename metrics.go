@@ -69,6 +69,10 @@ func OpenWriteFifo(path string) (io.Writer, error) {
 // but do not panic.
 func StartReader(moduleName string, file io.Reader, output io.Writer, errorWriter io.Writer) {
 
+	if requestsTotal == nil && bytesTotal == nil {
+		initMetrics(moduleName)
+	}
+
 	go func() {
 
 		reader := bufio.NewReader(file)

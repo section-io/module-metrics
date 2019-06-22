@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -10,6 +11,7 @@ import (
 )
 
 const (
+	metricsAddress     = "0.0.0.0"
 	defaultMetricsPath = "/metrics"
 	defaultMetricsPort = "9000"
 )
@@ -20,23 +22,11 @@ type counter interface {
 }
 
 var (
-	requestsTotal counter = prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace: promeNamespace,
-		Subsystem: "total",
-		Name:      "request_count_total",
-		Help:      "Total count of HTTP requests.",
-	})
+	requestsTotal counter
+	bytesTotal    counter
 
-	bytesTotal counter = prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace: promeNamespace,
-		Subsystem: "total",
-		Name:      "bytes_total",
-		Help:      "Total sum of response bytes.",
-	})
-
-	metricsPath    string
-	metricsPort    string
-	promeNamespace string
+	// MetricsURI is the address the prometheus server is listening on
+	MetricsURI string
 )
 
 func addRequest(hostname string, bytes int) {
@@ -44,26 +34,42 @@ func addRequest(hostname string, bytes int) {
 	requestsTotal.Inc()
 }
 
-func StartPrometheusServer(moduleName string) {
+func initMetrics(promeNamespace string) {
+	requestsTotal = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: promeNamespace,
+		Subsystem: "total",
+		Name:      "request_count_total",
+		Help:      "Total count of HTTP requests.",
+	})
 
-	promeNamespace = moduleName
+	bytesTotal = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: promeNamespace,
+		Subsystem: "total",
+		Name:      "bytes_total",
+		Help:      "Total sum of response bytes.",
+	})
+}
 
-	metricsPath = os.Getenv("P8S_METRICS_PATH")
+func StartPrometheusServer() {
+
+	metricsPath := os.Getenv("P8S_METRICS_PATH")
 	if metricsPath == "" {
 		metricsPath = defaultMetricsPath
 	}
 
-	metricsPort = os.Getenv("P8S_METRICS_PORT")
+	metricsPort := os.Getenv("P8S_METRICS_PORT")
 	if metricsPort == "" {
 		metricsPort = defaultMetricsPort
 	}
+
+	MetricsURI = fmt.Sprintf("http://%s:%s%s", metricsAddress, metricsPort, metricsPath)
 
 	prometheus.MustRegister(requestsTotal.(prometheus.Counter), bytesTotal.(prometheus.Counter))
 
 	http.Handle(metricsPath, promhttp.Handler())
 	go func() {
-		log.Printf("Listening on http://0.0.0.0:%s%s\n", metricsPort, metricsPath)
-		if err := http.ListenAndServe(":"+metricsPort, nil); err != nil {
+		log.Printf("Listening on %s\n", MetricsURI)
+		if err := http.ListenAndServe(metricsAddress+":"+metricsPort, nil); err != nil {
 			log.Fatalf("[ERROR] failed to start HTTP server: %v\n", err)
 		}
 	}()
