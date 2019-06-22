@@ -17,11 +17,6 @@ const (
 	promeSubsystem     = "http"
 )
 
-type counter interface {
-	Inc()
-	Add(float64)
-}
-
 var (
 	requestsTotal *prometheus.CounterVec
 	bytesTotal    *prometheus.CounterVec

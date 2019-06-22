@@ -105,19 +105,6 @@ func TestLogsOutputEqualsInput(t *testing.T) {
 	}
 }
 
-// implements the counter interface
-type testCounter struct {
-	Value float64
-}
-
-func (t *testCounter) Inc() {
-	t.Value++
-}
-
-func (t *testCounter) Add(v float64) {
-	t.Value = t.Value + v
-}
-
 func TestCountersIncrease(t *testing.T) {
 
 	logs := []string{
