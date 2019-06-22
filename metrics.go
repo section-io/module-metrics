@@ -90,7 +90,7 @@ func StartReader(moduleName string, file io.Reader, output io.Writer, errorWrite
 				_, _ = fmt.Fprintf(errorWriter, "json.Unmarshal failed: %v", jsonErr)
 			}
 
-			addRequest(logline.Hostname, logline.getBytes())
+			addRequest(logline.Hostname, logline.Status, logline.getBytes())
 
 			line, err = reader.ReadBytes('\n')
 		}

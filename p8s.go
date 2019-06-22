@@ -14,6 +14,7 @@ const (
 	metricsAddress     = "0.0.0.0"
 	defaultMetricsPath = "/metrics"
 	defaultMetricsPort = "9000"
+	promeSubsystem     = "http"
 )
 
 type counter interface {
@@ -22,32 +23,34 @@ type counter interface {
 }
 
 var (
-	requestsTotal counter
-	bytesTotal    counter
+	requestsTotal *prometheus.CounterVec
+	bytesTotal    *prometheus.CounterVec
+
+	p8sLabels = []string{"hostname", "status"}
 
 	// MetricsURI is the address the prometheus server is listening on
 	MetricsURI string
 )
 
-func addRequest(hostname string, bytes int) {
-	bytesTotal.Add(float64(bytes))
-	requestsTotal.Inc()
+func addRequest(hostname string, status string, bytes int) {
+	requestsTotal.With(prometheus.Labels{"hostname": hostname, "status": status}).Inc()
+	bytesTotal.With(prometheus.Labels{"hostname": hostname, "status": status}).Add(float64(bytes))
 }
 
 func initMetrics(promeNamespace string) {
-	requestsTotal = prometheus.NewCounter(prometheus.CounterOpts{
+	requestsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: promeNamespace,
-		Subsystem: "total",
+		Subsystem: promeSubsystem,
 		Name:      "request_count_total",
 		Help:      "Total count of HTTP requests.",
-	})
+	}, p8sLabels)
 
-	bytesTotal = prometheus.NewCounter(prometheus.CounterOpts{
+	bytesTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: promeNamespace,
-		Subsystem: "total",
+		Subsystem: promeSubsystem,
 		Name:      "bytes_total",
 		Help:      "Total sum of response bytes.",
-	})
+	}, p8sLabels)
 }
 
 func StartPrometheusServer() {
@@ -64,7 +67,7 @@ func StartPrometheusServer() {
 
 	MetricsURI = fmt.Sprintf("http://%s:%s%s", metricsAddress, metricsPort, metricsPath)
 
-	prometheus.MustRegister(requestsTotal.(prometheus.Counter), bytesTotal.(prometheus.Counter))
+	prometheus.MustRegister(requestsTotal, bytesTotal)
 
 	http.Handle(metricsPath, promhttp.Handler())
 	go func() {
