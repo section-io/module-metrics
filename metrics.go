@@ -6,14 +6,26 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"syscall"
 
 	"github.com/pkg/errors"
 )
 
 type logLine struct {
-	Status string `json:"status"`
-	Bytes  int    `json:"bytes,string"`
+	Status    string `json:"status"`
+	Bytes     string `json:"bytes"`
+	BytesSent string `json:"bytes_sent"`
+	Hostname  string `json:"hostname"`
+}
+
+func (l logLine) getBytes() int {
+	bytes, _ := strconv.Atoi(l.Bytes)
+	if bytes <= 0 {
+		bytes, _ = strconv.Atoi(l.BytesSent)
+	}
+
+	return bytes
 }
 
 // CreateLogFifo creates the log pipe, will remove the file first if it already exists.
@@ -55,7 +67,8 @@ func OpenWriteFifo(path string) (io.Writer, error) {
 // StartReader starts a loop in a goroutine that reads from the fifo file and writes out to the
 // output file. Any errors regarding parsing the log line are written to the errorWriter (eg os.Stderr)
 // but do not panic.
-func StartReader(file io.Reader, output io.Writer, errorWriter io.Writer) {
+func StartReader(moduleName string, file io.Reader, output io.Writer, errorWriter io.Writer) {
+
 	go func() {
 
 		reader := bufio.NewReader(file)
@@ -73,7 +86,7 @@ func StartReader(file io.Reader, output io.Writer, errorWriter io.Writer) {
 				_, _ = fmt.Fprintf(errorWriter, "json.Unmarshal failed: %v", jsonErr)
 			}
 
-			_, _ = fmt.Fprintf(errorWriter, "Bytes: %d, Status: %s", logline.Bytes, logline.Status)
+			addRequest(logline.Hostname, logline.getBytes())
 
 			line, err = reader.ReadBytes('\n')
 		}
