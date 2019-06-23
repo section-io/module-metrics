@@ -74,7 +74,7 @@ func StartPrometheusServer(stderr io.Writer) {
 
 	http.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	go func() {
-		fmt.Fprintf(stderr, "Listening on %s\n", MetricsURI)
+		_, _ = fmt.Fprintf(stderr, "Listening on %s\n", MetricsURI)
 		if err := http.ListenAndServe(metricsAddress+":"+metricsPort, nil); err != nil {
 			log.Fatalf("[ERROR] failed to start HTTP server: %v\n", err)
 		}
