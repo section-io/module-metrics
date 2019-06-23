@@ -20,6 +20,7 @@ const (
 var (
 	requestsTotal *prometheus.CounterVec
 	bytesTotal    *prometheus.CounterVec
+	registry      *prometheus.Registry
 
 	p8sLabels = []string{"hostname", "status"}
 
@@ -32,24 +33,27 @@ func addRequest(hostname string, status string, bytes int) {
 	bytesTotal.With(prometheus.Labels{"hostname": hostname, "status": status}).Add(float64(bytes))
 }
 
+// initMetrics sets up the prometheus registry and creates the metrics. Calling this
+// will reset any collected metrics
 func initMetrics(promeNamespace string) {
-	if requestsTotal == nil && bytesTotal == nil {
-		requestsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace: promeNamespace,
-			Subsystem: promeSubsystem,
-			Name:      "request_count_total",
-			Help:      "Total count of HTTP requests.",
-		}, p8sLabels)
+	registry = prometheus.NewRegistry()
 
-		bytesTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace: promeNamespace,
-			Subsystem: promeSubsystem,
-			Name:      "bytes_total",
-			Help:      "Total sum of response bytes.",
-		}, p8sLabels)
+	requestsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: promeNamespace,
+		Subsystem: promeSubsystem,
+		Name:      "request_count_total",
+		Help:      "Total count of HTTP requests.",
+	}, p8sLabels)
 
-		prometheus.MustRegister(requestsTotal, bytesTotal)
-	}
+	bytesTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: promeNamespace,
+		Subsystem: promeSubsystem,
+		Name:      "bytes_total",
+		Help:      "Total sum of response bytes.",
+	}, p8sLabels)
+
+	registry.MustRegister(requestsTotal, bytesTotal)
+
 }
 
 func StartPrometheusServer() {
@@ -66,7 +70,7 @@ func StartPrometheusServer() {
 
 	MetricsURI = fmt.Sprintf("http://%s:%s%s", metricsAddress, metricsPort, metricsPath)
 
-	http.Handle(metricsPath, promhttp.Handler())
+	http.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	go func() {
 		log.Printf("Listening on %s\n", MetricsURI)
 		if err := http.ListenAndServe(metricsAddress+":"+metricsPort, nil); err != nil {
