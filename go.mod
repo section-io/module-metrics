@@ -1,4 +1,4 @@
-module github.com/section.io/module-metrics
+module github.com/section-io/module-metrics
 
 go 1.12
 
