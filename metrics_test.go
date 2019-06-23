@@ -218,7 +218,6 @@ func testP8sServer(t *testing.T, writer io.Writer, stdout *bytes.Buffer) {
 		t.Errorf("HTTP response:\n%s\n does not contain expected %s", body, expected)
 	}
 }
-
 func TestReaderRunning(t *testing.T) {
 	writer, stdout := setup(t)
 
