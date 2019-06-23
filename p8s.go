@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -56,7 +57,8 @@ func initMetrics(promeNamespace string) {
 
 }
 
-func StartPrometheusServer() {
+// StartPrometheusServer starts the prometheus HTTP server
+func StartPrometheusServer(stderr io.Writer) {
 
 	metricsPath := os.Getenv("P8S_METRICS_PATH")
 	if metricsPath == "" {
@@ -72,7 +74,7 @@ func StartPrometheusServer() {
 
 	http.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	go func() {
-		log.Printf("Listening on %s\n", MetricsURI)
+		fmt.Fprintf(stderr, "Listening on %s\n", MetricsURI)
 		if err := http.ListenAndServe(metricsAddress+":"+metricsPort, nil); err != nil {
 			log.Fatalf("[ERROR] failed to start HTTP server: %v\n", err)
 		}
