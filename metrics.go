@@ -1,4 +1,4 @@
-package metrics //import section.io/module-metrics
+package metrics //import github.com/section.io/module-metrics
 
 import (
 	"bufio"
