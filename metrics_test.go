@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"bytes"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -51,7 +50,7 @@ func TestCreateLogFifoFails(t *testing.T) {
 	}
 }
 
-func setup(t *testing.T) (io.Writer, *bytes.Buffer) {
+func setup(t *testing.T) *bytes.Buffer {
 	err := CreateLogFifo(fifoFilePath)
 	if err != nil {
 		t.Error(err)
@@ -62,15 +61,10 @@ func setup(t *testing.T) (io.Writer, *bytes.Buffer) {
 		t.Errorf("OpenReadFifo(%s) failed: %#v", fifoFilePath, err)
 	}
 
-	writer, err := OpenWriteFifo(fifoFilePath)
-	if err != nil {
-		t.Errorf("OpenWriteFifo(%s) failed: %#v", fifoFilePath, err)
-	}
-
 	var stdout bytes.Buffer
-	StartReader(moduleName, reader, &stdout, os.Stderr)
+	StartReader(reader, &stdout, os.Stderr)
 
-	return writer, &stdout
+	return &stdout
 }
 
 func teardown(t *testing.T) {
@@ -80,7 +74,7 @@ func teardown(t *testing.T) {
 	}
 }
 
-func testLogsOutputEqualsInput(t *testing.T, writer io.Writer, stdout *bytes.Buffer) {
+func testLogsOutputEqualsInput(t *testing.T, stdout *bytes.Buffer) {
 
 	logs := []string{
 		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.070","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","status":"304","bytes_sent":"358","body_bytes_sent":"0","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"304","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.070","upstream_connect_time":"0.052","upstream_response_time":"0.070","upstream_response_length":"0","upstream_bytes_received":"288","upstream_http_content_type":"-","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"-","upstream_http_transfer_encoding":"-","sent_http_content_length":"-","sent_http_content_encoding":"-","sent_http_transfer_encoding":"-","section-io-id":"cf99df8057b93ec96c0ee1253ba4c309"}`,
@@ -95,7 +89,12 @@ func testLogsOutputEqualsInput(t *testing.T, writer io.Writer, stdout *bytes.Buf
 		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.075","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","status":"200","bytes_sent":"2126","body_bytes_sent":"1665","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"200","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.075","upstream_connect_time":"0.056","upstream_response_time":"0.075","upstream_response_length":"1665","upstream_bytes_received":"2056","upstream_http_content_type":"application/javascript","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"gzip","upstream_http_transfer_encoding":"chunked","sent_http_content_length":"-","sent_http_content_encoding":"gzip","sent_http_transfer_encoding":"chunked","section-io-id":"789addb393a18ff1caf5d776b53cf30e"}`,
 	}
 
-	initMetrics(moduleName)
+	InitMetrics(moduleName)
+
+	writer, err := OpenWriteFifo(fifoFilePath)
+	if err != nil {
+		t.Errorf("OpenWriteFifo(%s) failed: %#v", fifoFilePath, err)
+	}
 
 	for _, line := range logs {
 		_, err := writer.Write([]byte(line + "\n"))
@@ -114,9 +113,11 @@ func testLogsOutputEqualsInput(t *testing.T, writer io.Writer, stdout *bytes.Buf
 			t.Errorf("Logs not equal, %s != %s", outputLines[i], logs[i])
 		}
 	}
+
+	_ = writer.Close()
 }
 
-func testCountersIncrease(t *testing.T, writer io.Writer, stdout *bytes.Buffer) {
+func testCountersIncrease(t *testing.T, stdout *bytes.Buffer) {
 
 	logs := []string{
 		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.070","hostname":"www.example.com","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","status":"304","bytes_sent":"358","body_bytes_sent":"0","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"304","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.070","upstream_connect_time":"0.052","upstream_response_time":"0.070","upstream_response_length":"0","upstream_bytes_received":"288","upstream_http_content_type":"-","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"-","upstream_http_transfer_encoding":"-","sent_http_content_length":"-","sent_http_content_encoding":"-","sent_http_transfer_encoding":"-","section-io-id":"cf99df8057b93ec96c0ee1253ba4c309"}`,
@@ -131,7 +132,12 @@ func testCountersIncrease(t *testing.T, writer io.Writer, stdout *bytes.Buffer) 
 		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.075","hostname":"www.example.com","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","status":"200","bytes_sent":"2126","body_bytes_sent":"1665","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"200","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.075","upstream_connect_time":"0.056","upstream_response_time":"0.075","upstream_response_length":"1665","upstream_bytes_received":"2056","upstream_http_content_type":"application/javascript","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"gzip","upstream_http_transfer_encoding":"chunked","sent_http_content_length":"-","sent_http_content_encoding":"gzip","sent_http_transfer_encoding":"chunked","section-io-id":"789addb393a18ff1caf5d776b53cf30e"}`,
 	}
 
-	initMetrics(moduleName)
+	InitMetrics(moduleName)
+
+	writer, err := OpenWriteFifo(fifoFilePath)
+	if err != nil {
+		t.Errorf("OpenWriteFifo(%s) failed: %#v", fifoFilePath, err)
+	}
 
 	for _, line := range logs {
 		_, err := writer.Write([]byte(line + "\n"))
@@ -165,9 +171,11 @@ func testCountersIncrease(t *testing.T, writer io.Writer, stdout *bytes.Buffer) 
 	if !strings.Contains(actual, expected) {
 		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
 	}
+
+	_ = writer.Close()
 }
 
-func testP8sServer(t *testing.T, writer io.Writer, stdout *bytes.Buffer) {
+func testP8sServer(t *testing.T, stdout *bytes.Buffer) {
 
 	logs := []string{
 		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.070","hostname":"www.example.com","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","status":"304","bytes_sent":"358","body_bytes_sent":"0","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"304","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.070","upstream_connect_time":"0.052","upstream_response_time":"0.070","upstream_response_length":"0","upstream_bytes_received":"288","upstream_http_content_type":"-","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"-","upstream_http_transfer_encoding":"-","sent_http_content_length":"-","sent_http_content_encoding":"-","sent_http_transfer_encoding":"-","section-io-id":"cf99df8057b93ec96c0ee1253ba4c309"}`,
@@ -182,7 +190,12 @@ func testP8sServer(t *testing.T, writer io.Writer, stdout *bytes.Buffer) {
 		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.075","hostname":"www.example.com","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","status":"200","bytes_sent":"2126","body_bytes_sent":"1665","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"200","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.075","upstream_connect_time":"0.056","upstream_response_time":"0.075","upstream_response_length":"1665","upstream_bytes_received":"2056","upstream_http_content_type":"application/javascript","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"gzip","upstream_http_transfer_encoding":"chunked","sent_http_content_length":"-","sent_http_content_encoding":"gzip","sent_http_transfer_encoding":"chunked","section-io-id":"789addb393a18ff1caf5d776b53cf30e"}`,
 	}
 
-	initMetrics(moduleName)
+	InitMetrics(moduleName)
+
+	writer, err := OpenWriteFifo(fifoFilePath)
+	if err != nil {
+		t.Errorf("OpenWriteFifo(%s) failed: %#v", fifoFilePath, err)
+	}
 
 	StartPrometheusServer(os.Stderr)
 
@@ -217,13 +230,15 @@ func testP8sServer(t *testing.T, writer io.Writer, stdout *bytes.Buffer) {
 	if !strings.Contains(body, expected) {
 		t.Errorf("HTTP response:\n%s\n does not contain expected %s", body, expected)
 	}
+
+	_ = writer.Close()
 }
 func TestReaderRunning(t *testing.T) {
-	writer, stdout := setup(t)
+	stdout := setup(t)
 
-	t.Run("testLogsOutputEqualsInput", func(t *testing.T) { testLogsOutputEqualsInput(t, writer, stdout) })
-	t.Run("testCountersIncrease", func(t *testing.T) { testCountersIncrease(t, writer, stdout) })
-	t.Run("testP8sServer", func(t *testing.T) { testP8sServer(t, writer, stdout) })
+	t.Run("testLogsOutputEqualsInput", func(t *testing.T) { testLogsOutputEqualsInput(t, stdout) })
+	t.Run("testCountersIncrease", func(t *testing.T) { testCountersIncrease(t, stdout) })
+	t.Run("testP8sServer", func(t *testing.T) { testP8sServer(t, stdout) })
 
 	teardown(t)
 }

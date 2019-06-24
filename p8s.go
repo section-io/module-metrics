@@ -34,9 +34,9 @@ func addRequest(hostname string, status string, bytes int) {
 	bytesTotal.With(prometheus.Labels{"hostname": hostname, "status": status}).Add(float64(bytes))
 }
 
-// initMetrics sets up the prometheus registry and creates the metrics. Calling this
+// InitMetrics sets up the prometheus registry and creates the metrics. Calling this
 // will reset any collected metrics
-func initMetrics(promeNamespace string) {
+func InitMetrics(promeNamespace string) {
 	registry = prometheus.NewRegistry()
 
 	requestsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{

@@ -19,6 +19,10 @@ type logLine struct {
 	Hostname  string `json:"hostname"`
 }
 
+var (
+	filepath string
+)
+
 func (l logLine) getBytes() int {
 	bytes, _ := strconv.Atoi(l.Bytes)
 	if bytes <= 0 {
@@ -47,11 +51,13 @@ func CreateLogFifo(path string) error {
 		return errors.Wrapf(err, "Chmod %s failed: %v", path, err)
 	}
 
+	filepath = path
+
 	return nil
 }
 
 // OpenReadFifo opens the fifo file for reading, returning the reader
-func OpenReadFifo(path string) (io.Reader, error) {
+func OpenReadFifo(path string) (io.ReadCloser, error) {
 	file, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NONBLOCK, os.ModeNamedPipe)
 	if err != nil {
 		return nil, errors.Wrapf(err, "OpenReadFifo %s failed: %v", path, err)
@@ -61,7 +67,7 @@ func OpenReadFifo(path string) (io.Reader, error) {
 }
 
 // OpenWriteFifo opens the fifo file for writing, returning the writer
-func OpenWriteFifo(path string) (io.Writer, error) {
+func OpenWriteFifo(path string) (io.WriteCloser, error) {
 	file, err := os.OpenFile(path, os.O_RDWR, os.ModeNamedPipe)
 	if err != nil {
 		return nil, errors.Wrapf(err, "OpenWriteFifo %s failed: %v", path, err)
@@ -73,9 +79,7 @@ func OpenWriteFifo(path string) (io.Writer, error) {
 // StartReader starts a loop in a goroutine that reads from the fifo file and writes out to the
 // output file. Any errors regarding parsing the log line are written to the errorWriter (eg os.Stderr)
 // but do not panic.
-func StartReader(moduleName string, file io.Reader, output io.Writer, errorWriter io.Writer) {
-
-	initMetrics(moduleName)
+func StartReader(file io.Reader, output io.Writer, errorWriter io.Writer) {
 
 	go func() {
 
@@ -99,8 +103,16 @@ func StartReader(moduleName string, file io.Reader, output io.Writer, errorWrite
 			line, err = reader.ReadBytes('\n')
 		}
 
-		if err != nil {
-			panic(errors.Wrapf(err, "ReadBytes failed"))
+		// If EOF is reached the writer program closed the file, so reopen it
+		if err == io.EOF {
+			file, err = OpenReadFifo(filepath)
+			if err != nil {
+				panic(err)
+			}
+			StartReader(file, output, errorWriter)
+			return
 		}
+
+		panic(errors.Wrapf(err, "ReadBytes failed"))
 	}()
 }
