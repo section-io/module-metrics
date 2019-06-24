@@ -7,50 +7,13 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/prometheus/common/expfmt"
 )
 
 const (
-	fifoFilePath = "/tmp/section.module.metrics-fifotest"
-	moduleName   = "test_module"
+	moduleName = "test_module"
 )
-
-func setup(t *testing.T) *bytes.Buffer {
-	err := CreateLogFifo(fifoFilePath)
-	if err != nil {
-		t.Error(err)
-	}
-
-	reader, err := OpenReadFifo(fifoFilePath)
-	if err != nil {
-		t.Errorf("OpenReadFifo(%s) failed: %#v", fifoFilePath, err)
-	}
-
-	var stdout bytes.Buffer
-	StartReader(reader, &stdout, os.Stderr)
-
-	return &stdout
-}
-
-func writeLogs(t *testing.T, logs []string) {
-	writer, err := OpenWriteFifo(fifoFilePath)
-	defer func() { _ = writer.Close() }()
-	if err != nil {
-		t.Errorf("OpenWriteFifo(%s) failed: %#v", fifoFilePath, err)
-	}
-
-	for _, line := range logs {
-		_, err := writer.Write([]byte(line + "\n"))
-		if err != nil {
-			t.Errorf("Error writing line: %#v", err)
-		}
-	}
-
-	//Give the reader loop time to finish
-	time.Sleep(time.Second * 1)
-}
 
 func getP8sHTTPResponse(t *testing.T) string {
 	resp, err := http.Get(MetricsURI)
@@ -227,7 +190,7 @@ func testP8sServer(t *testing.T, stdout *bytes.Buffer) {
 	}
 }
 func TestReaderRunning(t *testing.T) {
-	stdout := setup(t)
+	stdout := setupReader(t)
 
 	t.Run("testLogsOutputEqualsInput", func(t *testing.T) { testLogsOutputEqualsInput(t, stdout) })
 	t.Run("testCountersIncrease", func(t *testing.T) { testCountersIncrease(t, stdout) })
