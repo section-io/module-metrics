@@ -100,6 +100,7 @@ func testLogsOutputEqualsInput(t *testing.T, stdout *bytes.Buffer) {
 	InitMetrics(moduleName)
 
 	writer, err := OpenWriteFifo(fifoFilePath)
+	defer func() { _ = writer.Close() }()
 	if err != nil {
 		t.Errorf("OpenWriteFifo(%s) failed: %#v", fifoFilePath, err)
 	}
@@ -121,8 +122,6 @@ func testLogsOutputEqualsInput(t *testing.T, stdout *bytes.Buffer) {
 			t.Errorf("Logs not equal, %s != %s", outputLines[i], logs[i])
 		}
 	}
-
-	_ = writer.Close()
 }
 
 func testCountersIncrease(t *testing.T, stdout *bytes.Buffer) {
@@ -143,6 +142,7 @@ func testCountersIncrease(t *testing.T, stdout *bytes.Buffer) {
 	InitMetrics(moduleName)
 
 	writer, err := OpenWriteFifo(fifoFilePath)
+	defer func() { _ = writer.Close() }()
 	if err != nil {
 		t.Errorf("OpenWriteFifo(%s) failed: %#v", fifoFilePath, err)
 	}
@@ -179,8 +179,6 @@ func testCountersIncrease(t *testing.T, stdout *bytes.Buffer) {
 	if !strings.Contains(actual, expected) {
 		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
 	}
-
-	_ = writer.Close()
 }
 
 func testBytesAndBytesSentAreRead(t *testing.T, stdout *bytes.Buffer) {
@@ -193,6 +191,7 @@ func testBytesAndBytesSentAreRead(t *testing.T, stdout *bytes.Buffer) {
 	InitMetrics(moduleName)
 
 	writer, err := OpenWriteFifo(fifoFilePath)
+	defer func() { _ = writer.Close() }()
 	if err != nil {
 		t.Errorf("OpenWriteFifo(%s) failed: %#v", fifoFilePath, err)
 	}
@@ -229,8 +228,6 @@ func testBytesAndBytesSentAreRead(t *testing.T, stdout *bytes.Buffer) {
 	if !strings.Contains(actual, expected) {
 		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
 	}
-
-	_ = writer.Close()
 }
 
 func testP8sServer(t *testing.T, stdout *bytes.Buffer) {
@@ -251,6 +248,7 @@ func testP8sServer(t *testing.T, stdout *bytes.Buffer) {
 	InitMetrics(moduleName)
 
 	writer, err := OpenWriteFifo(fifoFilePath)
+	defer func() { _ = writer.Close() }()
 	if err != nil {
 		t.Errorf("OpenWriteFifo(%s) failed: %#v", fifoFilePath, err)
 	}
@@ -278,8 +276,6 @@ func testP8sServer(t *testing.T, stdout *bytes.Buffer) {
 	if !strings.Contains(body, expected) {
 		t.Errorf("HTTP response:\n%s\n does not contain expected %s", body, expected)
 	}
-
-	_ = writer.Close()
 }
 func TestReaderRunning(t *testing.T) {
 	stdout := setup(t)
