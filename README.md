@@ -20,6 +20,7 @@ The metrics collected are:
 
 * `module_name_http_request_count_total{ hostname="www.example.com", status="200" }` - Counter of number of HTTP requests by hostname & status.
 * `module_name_http_bytes_total{ hostname="www.example.com", status="200" }` - Counter of sum of bytes sent downstream by hostname & status.
+* `module_name_http_json_parse_errors_total` - Counter of the number of times it has been unable to JSON parse a log line.
 
 The `module_name` portion of the metric name is constructed from the `SECTION_PROXY_NAME` environment variable.
 
