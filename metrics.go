@@ -66,16 +66,6 @@ func OpenReadFifo(path string) (io.ReadCloser, error) {
 	return file, nil
 }
 
-// OpenWriteFifo opens the fifo file for writing, returning the writer
-func OpenWriteFifo(path string) (io.WriteCloser, error) {
-	file, err := os.OpenFile(path, os.O_RDWR, os.ModeNamedPipe)
-	if err != nil {
-		return nil, errors.Wrapf(err, "OpenWriteFifo %s failed: %v", path, err)
-	}
-
-	return file, nil
-}
-
 // StartReader starts a loop in a goroutine that reads from the fifo file and writes out to the
 // output file. Any errors regarding parsing the log line are written to the errorWriter (eg os.Stderr)
 // but do not panic.

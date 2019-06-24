@@ -29,11 +29,11 @@ func setupReader(t *testing.T) *bytes.Buffer {
 }
 
 func writeLogs(t *testing.T, logs []string) {
-	writer, err := OpenWriteFifo(fifoFilePath)
-	defer func() { _ = writer.Close() }()
+	writer, err := os.OpenFile(fifoFilePath, os.O_RDWR, os.ModeNamedPipe)
 	if err != nil {
-		t.Errorf("OpenWriteFifo(%s) failed: %#v", fifoFilePath, err)
+		t.Errorf("OpenFile %s failed: %#v", fifoFilePath, err)
 	}
+	defer func() { _ = writer.Close() }()
 
 	for _, line := range logs {
 		_, err := writer.Write([]byte(line + "\n"))
