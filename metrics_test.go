@@ -67,11 +67,19 @@ func setup(t *testing.T) *bytes.Buffer {
 	return &stdout
 }
 
-func teardown(t *testing.T) {
-	err := os.Remove(fifoFilePath)
+func getP8sHTTPResponse(t *testing.T) string {
+	resp, err := http.Get(MetricsURI)
 	if err != nil {
-		t.Errorf("Error removing %s: %#v", fifoFilePath, err)
+		t.Errorf("Error getting %s: %#v", MetricsURI, err)
 	}
+	defer func() { _ = resp.Body.Close() }()
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Errorf("Error reading body: %#v", err)
+	}
+
+	return string(bodyBytes)
 }
 
 func testLogsOutputEqualsInput(t *testing.T, stdout *bytes.Buffer) {
@@ -259,18 +267,8 @@ func testP8sServer(t *testing.T, stdout *bytes.Buffer) {
 	//Give the reader loop time to finish
 	time.Sleep(time.Second * 1)
 
-	resp, err := http.Get(MetricsURI)
-	if err != nil {
-		t.Errorf("Error getting %s: %#v", MetricsURI, err)
-	}
-	defer func() { _ = resp.Body.Close() }()
+	body := getP8sHTTPResponse(t)
 
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Errorf("Error reading body: %#v", err)
-	}
-
-	body := string(bodyBytes)
 	expected := `test_module_http_request_count_total{hostname="bar.example.com",status="304"} 1`
 	if !strings.Contains(body, expected) {
 		t.Errorf("HTTP response:\n%s\n does not contain expected %s", body, expected)
@@ -290,6 +288,4 @@ func TestReaderRunning(t *testing.T) {
 	t.Run("testCountersIncrease", func(t *testing.T) { testCountersIncrease(t, stdout) })
 	t.Run("testBytesAndBytesSentAreRead", func(t *testing.T) { testBytesAndBytesSentAreRead(t, stdout) })
 	t.Run("testP8sServer", func(t *testing.T) { testP8sServer(t, stdout) })
-
-	teardown(t)
 }
