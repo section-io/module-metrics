@@ -62,7 +62,6 @@ func InitMetrics(promeNamespace string) {
 	})
 
 	registry.MustRegister(requestsTotal, bytesTotal, jsonParseErrorTotal)
-
 }
 
 // StartPrometheusServer starts the prometheus HTTP server

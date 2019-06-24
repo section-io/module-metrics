@@ -19,7 +19,7 @@ func setupReader(t *testing.T) *bytes.Buffer {
 
 	reader, err := OpenReadFifo(fifoFilePath)
 	if err != nil {
-		t.Errorf("OpenReadFifo(%s) failed: %#v", fifoFilePath, err)
+		t.Error(err)
 	}
 
 	var stdout bytes.Buffer

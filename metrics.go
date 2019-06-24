@@ -107,3 +107,25 @@ func StartReader(file io.Reader, output io.Writer, errorWriter io.Writer) {
 		panic(errors.Wrapf(err, "ReadBytes failed"))
 	}()
 }
+
+// SetupModule does the default setup scenario: creating & opening the FIFO file,
+// starting the Prometheus server and starting the reader.
+func SetupModule(moduleName string, path string, stdout io.Writer, stderr io.Writer) error {
+	err := CreateLogFifo(fifoFilePath)
+	if err != nil {
+		return err
+	}
+
+	reader, err := OpenReadFifo(fifoFilePath)
+	if err != nil {
+		return err
+	}
+
+	InitMetrics(moduleName)
+
+	StartReader(reader, stdout, stderr)
+
+	StartPrometheusServer(stderr)
+
+	return nil
+}
