@@ -156,6 +156,26 @@ func testInvalidBytesAndBytesSent(t *testing.T, stdout *bytes.Buffer) {
 	}
 }
 
+func testJSONParseErrors(t *testing.T, stdout *bytes.Buffer) {
+
+	logs := []string{
+		`Not JSON`,
+		`{Neither is is}`,
+		`{"Broken: "Property"}`,
+	}
+
+	InitMetrics(moduleName)
+
+	writeLogs(t, logs)
+
+	actual := gatherP8sResponse(t)
+
+	expected := `test_module_http_json_parse_errors_total 3`
+	if !strings.Contains(actual, expected) {
+		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
+	}
+}
+
 func testP8sServer(t *testing.T, stdout *bytes.Buffer) {
 
 	logs := []string{
@@ -196,5 +216,6 @@ func TestReaderRunning(t *testing.T) {
 	t.Run("testCountersIncrease", func(t *testing.T) { testCountersIncrease(t, stdout) })
 	t.Run("testBytesAndBytesSentAreRead", func(t *testing.T) { testBytesAndBytesSentAreRead(t, stdout) })
 	t.Run("testInvalidBytesAndBytesSent", func(t *testing.T) { testInvalidBytesAndBytesSent(t, stdout) })
+	t.Run("testJSONParseErrors", func(t *testing.T) { testJSONParseErrors(t, stdout) })
 	t.Run("testP8sServer", func(t *testing.T) { testP8sServer(t, stdout) })
 }

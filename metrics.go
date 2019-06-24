@@ -96,9 +96,10 @@ func StartReader(file io.Reader, output io.Writer, errorWriter io.Writer) {
 			jsonErr := json.Unmarshal(line, &logline)
 			if jsonErr != nil {
 				_, _ = fmt.Fprintf(errorWriter, "json.Unmarshal failed: %v", jsonErr)
+				jsonParseErrorTotal.Inc()
+			} else {
+				addRequest(logline.Hostname, logline.Status, logline.getBytes())
 			}
-
-			addRequest(logline.Hostname, logline.Status, logline.getBytes())
 
 			line, err = reader.ReadBytes('\n')
 		}

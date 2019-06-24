@@ -19,9 +19,10 @@ const (
 )
 
 var (
-	requestsTotal *prometheus.CounterVec
-	bytesTotal    *prometheus.CounterVec
-	registry      *prometheus.Registry
+	jsonParseErrorTotal prometheus.Counter
+	requestsTotal       *prometheus.CounterVec
+	bytesTotal          *prometheus.CounterVec
+	registry            *prometheus.Registry
 
 	p8sLabels = []string{"hostname", "status"}
 
@@ -53,7 +54,14 @@ func InitMetrics(promeNamespace string) {
 		Help:      "Total sum of response bytes.",
 	}, p8sLabels)
 
-	registry.MustRegister(requestsTotal, bytesTotal)
+	jsonParseErrorTotal = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: promeNamespace,
+		Subsystem: promeSubsystem,
+		Name:      "json_parse_errors_total",
+		Help:      "Total count of JSON parsing errors.",
+	})
+
+	registry.MustRegister(requestsTotal, bytesTotal, jsonParseErrorTotal)
 
 }
 
