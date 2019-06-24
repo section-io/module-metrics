@@ -41,6 +41,12 @@ func CreateLogFifo(path string) error {
 		return errors.Wrapf(err, "Mkfifo %s failed: %v", path, err)
 	}
 
+	// Really make sure the file is 0666 in case of umask
+	err = os.Chmod(path, 0666)
+	if err != nil {
+		return errors.Wrapf(err, "Chmod %s failed: %v", path, err)
+	}
+
 	return nil
 }
 
