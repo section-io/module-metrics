@@ -67,6 +67,24 @@ func setup(t *testing.T) *bytes.Buffer {
 	return &stdout
 }
 
+func writeLogs(t *testing.T, logs []string) {
+	writer, err := OpenWriteFifo(fifoFilePath)
+	defer func() { _ = writer.Close() }()
+	if err != nil {
+		t.Errorf("OpenWriteFifo(%s) failed: %#v", fifoFilePath, err)
+	}
+
+	for _, line := range logs {
+		_, err := writer.Write([]byte(line + "\n"))
+		if err != nil {
+			t.Errorf("Error writing line: %#v", err)
+		}
+	}
+
+	//Give the reader loop time to finish
+	time.Sleep(time.Second * 1)
+}
+
 func getP8sHTTPResponse(t *testing.T) string {
 	resp, err := http.Get(MetricsURI)
 	if err != nil {
@@ -99,21 +117,7 @@ func testLogsOutputEqualsInput(t *testing.T, stdout *bytes.Buffer) {
 
 	InitMetrics(moduleName)
 
-	writer, err := OpenWriteFifo(fifoFilePath)
-	defer func() { _ = writer.Close() }()
-	if err != nil {
-		t.Errorf("OpenWriteFifo(%s) failed: %#v", fifoFilePath, err)
-	}
-
-	for _, line := range logs {
-		_, err := writer.Write([]byte(line + "\n"))
-		if err != nil {
-			t.Errorf("Error writing line: %#v", err)
-		}
-	}
-
-	//Give the reader loop time to finish
-	time.Sleep(time.Second * 1)
+	writeLogs(t, logs)
 
 	outputLines := strings.Split(stdout.String(), "\n")
 
@@ -141,21 +145,7 @@ func testCountersIncrease(t *testing.T, stdout *bytes.Buffer) {
 
 	InitMetrics(moduleName)
 
-	writer, err := OpenWriteFifo(fifoFilePath)
-	defer func() { _ = writer.Close() }()
-	if err != nil {
-		t.Errorf("OpenWriteFifo(%s) failed: %#v", fifoFilePath, err)
-	}
-
-	for _, line := range logs {
-		_, err := writer.Write([]byte(line + "\n"))
-		if err != nil {
-			t.Errorf("Error writing line: %#v", err)
-		}
-	}
-
-	//Give the reader loop time to finish
-	time.Sleep(time.Second * 1)
+	writeLogs(t, logs)
 
 	gathering, err := registry.Gather()
 	if err != nil {
@@ -190,21 +180,7 @@ func testBytesAndBytesSentAreRead(t *testing.T, stdout *bytes.Buffer) {
 
 	InitMetrics(moduleName)
 
-	writer, err := OpenWriteFifo(fifoFilePath)
-	defer func() { _ = writer.Close() }()
-	if err != nil {
-		t.Errorf("OpenWriteFifo(%s) failed: %#v", fifoFilePath, err)
-	}
-
-	for _, line := range logs {
-		_, err := writer.Write([]byte(line + "\n"))
-		if err != nil {
-			t.Errorf("Error writing line: %#v", err)
-		}
-	}
-
-	//Give the reader loop time to finish
-	time.Sleep(time.Second * 1)
+	writeLogs(t, logs)
 
 	gathering, err := registry.Gather()
 	if err != nil {
@@ -247,23 +223,9 @@ func testP8sServer(t *testing.T, stdout *bytes.Buffer) {
 
 	InitMetrics(moduleName)
 
-	writer, err := OpenWriteFifo(fifoFilePath)
-	defer func() { _ = writer.Close() }()
-	if err != nil {
-		t.Errorf("OpenWriteFifo(%s) failed: %#v", fifoFilePath, err)
-	}
-
 	StartPrometheusServer(os.Stderr)
 
-	for _, line := range logs {
-		_, err := writer.Write([]byte(line + "\n"))
-		if err != nil {
-			t.Errorf("Error writing line: %#v", err)
-		}
-	}
-
-	//Give the reader loop time to finish
-	time.Sleep(time.Second * 1)
+	writeLogs(t, logs)
 
 	body := getP8sHTTPResponse(t)
 
