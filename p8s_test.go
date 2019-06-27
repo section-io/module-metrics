@@ -219,3 +219,17 @@ func TestReaderRunning(t *testing.T) {
 	t.Run("testJSONParseErrors", func(t *testing.T) { testJSONParseErrors(t, stdout) })
 	t.Run("testP8sServer", func(t *testing.T) { testP8sServer(t, stdout) })
 }
+
+func TestSetupModule(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping test in short mode.")
+	}
+
+	var stdout bytes.Buffer
+	err := SetupModule(moduleName, fifoFilePath, &stdout, os.Stderr)
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Run("testCountersIncrease", func(t *testing.T) { testCountersIncrease(t, &stdout) })
+}
