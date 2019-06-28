@@ -37,25 +37,22 @@ func addRequest(hostname string, status string, bytes int) {
 
 // InitMetrics sets up the prometheus registry and creates the metrics. Calling this
 // will reset any collected metrics
-func InitMetrics(promeNamespace string) {
+func InitMetrics() {
 	registry = prometheus.NewRegistry()
 
 	requestsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: promeNamespace,
 		Subsystem: promeSubsystem,
 		Name:      "request_count_total",
 		Help:      "Total count of HTTP requests.",
 	}, p8sLabels)
 
 	bytesTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: promeNamespace,
 		Subsystem: promeSubsystem,
 		Name:      "bytes_total",
 		Help:      "Total sum of response bytes.",
 	}, p8sLabels)
 
 	jsonParseErrorTotal = prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace: promeNamespace,
 		Subsystem: promeSubsystem,
 		Name:      "json_parse_errors_total",
 		Help:      "Total count of JSON parsing errors.",
