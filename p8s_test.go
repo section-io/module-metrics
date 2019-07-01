@@ -11,10 +11,6 @@ import (
 	"github.com/prometheus/common/expfmt"
 )
 
-const (
-	moduleName = "test_module"
-)
-
 func getP8sHTTPResponse(t *testing.T) string {
 	resp, err := http.Get(MetricsURI)
 	if err != nil {
@@ -61,7 +57,7 @@ func testLogsOutputEqualsInput(t *testing.T, stdout *bytes.Buffer) {
 		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.075","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","status":"200","bytes_sent":"2126","body_bytes_sent":"1665","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"200","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.075","upstream_connect_time":"0.056","upstream_response_time":"0.075","upstream_response_length":"1665","upstream_bytes_received":"2056","upstream_http_content_type":"application/javascript","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"gzip","upstream_http_transfer_encoding":"chunked","sent_http_content_length":"-","sent_http_content_encoding":"gzip","sent_http_transfer_encoding":"chunked","section-io-id":"789addb393a18ff1caf5d776b53cf30e"}`,
 	}
 
-	InitMetrics(moduleName)
+	InitMetrics()
 
 	writeLogs(t, logs)
 
@@ -89,18 +85,18 @@ func testCountersIncrease(t *testing.T, stdout *bytes.Buffer) {
 		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.075","hostname":"www.example.com","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","status":"200","bytes_sent":"2126","body_bytes_sent":"1665","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"200","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.075","upstream_connect_time":"0.056","upstream_response_time":"0.075","upstream_response_length":"1665","upstream_bytes_received":"2056","upstream_http_content_type":"application/javascript","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"gzip","upstream_http_transfer_encoding":"chunked","sent_http_content_length":"-","sent_http_content_encoding":"gzip","sent_http_transfer_encoding":"chunked","section-io-id":"789addb393a18ff1caf5d776b53cf30e"}`,
 	}
 
-	InitMetrics(moduleName)
+	InitMetrics()
 
 	writeLogs(t, logs)
 
 	actual := gatherP8sResponse(t)
 
-	expected := `test_module_http_request_count_total{hostname="bar.example.com",status="304"} 1`
+	expected := `section_http_request_count_total{hostname="bar.example.com",status="304"} 1`
 	if !strings.Contains(actual, expected) {
 		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
 	}
 
-	expected = `test_module_http_bytes_total{hostname="www.example.com",status="304"} 1790`
+	expected = `section_http_bytes_total{hostname="www.example.com",status="304"} 1790`
 	if !strings.Contains(actual, expected) {
 		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
 	}
@@ -113,18 +109,18 @@ func testBytesAndBytesSentAreRead(t *testing.T, stdout *bytes.Buffer) {
 		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.069","hostname":"www.example.com","status":"200","bytes_sent":"20","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","body_bytes_sent":"0","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"304","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.069","upstream_connect_time":"0.052","upstream_response_time":"0.069","upstream_response_length":"0","upstream_bytes_received":"288","upstream_http_content_type":"-","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"-","upstream_http_transfer_encoding":"-","sent_http_content_length":"-","sent_http_content_encoding":"-","sent_http_transfer_encoding":"-","section-io-id":"451e230222237f722eb49324d47142f6"}`,
 	}
 
-	InitMetrics(moduleName)
+	InitMetrics()
 
 	writeLogs(t, logs)
 
 	actual := gatherP8sResponse(t)
 
-	expected := `test_module_http_request_count_total{hostname="www.example.com",status="200"} 2`
+	expected := `section_http_request_count_total{hostname="www.example.com",status="200"} 2`
 	if !strings.Contains(actual, expected) {
 		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
 	}
 
-	expected = `test_module_http_bytes_total{hostname="www.example.com",status="200"} 30`
+	expected = `section_http_bytes_total{hostname="www.example.com",status="200"} 30`
 	if !strings.Contains(actual, expected) {
 		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
 	}
@@ -139,18 +135,18 @@ func testInvalidBytesAndBytesSent(t *testing.T, stdout *bytes.Buffer) {
 		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.069","hostname":"www.example.com","status":"200","bytes_sent":"-","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","body_bytes_sent":"0","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"304","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.069","upstream_connect_time":"0.052","upstream_response_time":"0.069","upstream_response_length":"0","upstream_bytes_received":"288","upstream_http_content_type":"-","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"-","upstream_http_transfer_encoding":"-","sent_http_content_length":"-","sent_http_content_encoding":"-","sent_http_transfer_encoding":"-","section-io-id":"451e230222237f722eb49324d47142f6"}`,
 	}
 
-	InitMetrics(moduleName)
+	InitMetrics()
 
 	writeLogs(t, logs)
 
 	actual := gatherP8sResponse(t)
 
-	expected := `test_module_http_request_count_total{hostname="www.example.com",status="200"} 4`
+	expected := `section_http_request_count_total{hostname="www.example.com",status="200"} 4`
 	if !strings.Contains(actual, expected) {
 		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
 	}
 
-	expected = `test_module_http_bytes_total{hostname="www.example.com",status="200"} 30`
+	expected = `section_http_bytes_total{hostname="www.example.com",status="200"} 30`
 	if !strings.Contains(actual, expected) {
 		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
 	}
@@ -164,13 +160,13 @@ func testJSONParseErrors(t *testing.T, stdout *bytes.Buffer) {
 		`{"Broken: "Property"}`,
 	}
 
-	InitMetrics(moduleName)
+	InitMetrics()
 
 	writeLogs(t, logs)
 
 	actual := gatherP8sResponse(t)
 
-	expected := `test_module_http_json_parse_errors_total 3`
+	expected := `section_http_json_parse_errors_total 3`
 	if !strings.Contains(actual, expected) {
 		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
 	}
@@ -191,7 +187,7 @@ func testP8sServer(t *testing.T, stdout *bytes.Buffer) {
 		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.075","hostname":"www.example.com","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","status":"200","bytes_sent":"2126","body_bytes_sent":"1665","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"200","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.075","upstream_connect_time":"0.056","upstream_response_time":"0.075","upstream_response_length":"1665","upstream_bytes_received":"2056","upstream_http_content_type":"application/javascript","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"gzip","upstream_http_transfer_encoding":"chunked","sent_http_content_length":"-","sent_http_content_encoding":"gzip","sent_http_transfer_encoding":"chunked","section-io-id":"789addb393a18ff1caf5d776b53cf30e"}`,
 	}
 
-	InitMetrics(moduleName)
+	InitMetrics()
 
 	StartPrometheusServer(os.Stderr)
 
@@ -199,12 +195,12 @@ func testP8sServer(t *testing.T, stdout *bytes.Buffer) {
 
 	body := getP8sHTTPResponse(t)
 
-	expected := `test_module_http_request_count_total{hostname="bar.example.com",status="304"} 1`
+	expected := `section_http_request_count_total{hostname="bar.example.com",status="304"} 1`
 	if !strings.Contains(body, expected) {
 		t.Errorf("HTTP response:\n%s\n does not contain expected %s", body, expected)
 	}
 
-	expected = `test_module_http_bytes_total{hostname="www.example.com",status="304"} 1790`
+	expected = `section_http_bytes_total{hostname="www.example.com",status="304"} 1790`
 	if !strings.Contains(body, expected) {
 		t.Errorf("HTTP response:\n%s\n does not contain expected %s", body, expected)
 	}
@@ -226,7 +222,7 @@ func TestSetupModule(t *testing.T) {
 	}
 
 	var stdout bytes.Buffer
-	err := SetupModule(moduleName, fifoFilePath, &stdout, os.Stderr)
+	err := SetupModule(fifoFilePath, &stdout, os.Stderr)
 	if err != nil {
 		t.Error(err)
 	}

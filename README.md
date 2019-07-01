@@ -18,10 +18,10 @@ This expectes a JSON log format with one line per HTTP request logged with the f
 
 The metrics collected are:
 
-* `module_name_http_request_count_total{ hostname="www.example.com", status="200" }` - Counter of number of HTTP requests by hostname & status.
-* `module_name_http_bytes_total{ hostname="www.example.com", status="200" }` - Counter of sum of bytes sent downstream by hostname & status.
-* `module_name_http_json_parse_errors_total` - Counter of the number of times it has been unable to JSON parse a log line.
+* `section_http_request_count_total{ section_io_module_name="module name", hostname="www.example.com", status="200" }` - Counter of number of HTTP requests by hostname & status.
+* `section_http_bytes_total{ section_io_module_name="module name", hostname="www.example.com", status="200" }` - Counter of sum of bytes sent downstream by hostname & status.
+* `section_http_json_parse_errors_total{ section_io_module_name="module name" }` - Counter of the number of times it has been unable to JSON parse a log line.
 
-The `module_name` portion of the metric name is constructed from the `SECTION_PROXY_NAME` environment variable.
+The `section_io_module_name` is configured as a target label on the service monitor for the module using this module.
 
 The metrics are published as a Prometheus exporter by default on port `9000` with the path `/metrics`.

@@ -37,7 +37,8 @@ func addRequest(hostname string, status string, bytes int) {
 
 // InitMetrics sets up the prometheus registry and creates the metrics. Calling this
 // will reset any collected metrics
-func InitMetrics(promeNamespace string) {
+func InitMetrics() {
+	const promeNamespace = "section"
 	registry = prometheus.NewRegistry()
 
 	requestsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
