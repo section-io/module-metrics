@@ -91,12 +91,12 @@ func testCountersIncrease(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	expected := `http_request_count_total{hostname="bar.example.com",status="304"} 1`
+	expected := `section_http_request_count_total{hostname="bar.example.com",status="304"} 1`
 	if !strings.Contains(actual, expected) {
 		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
 	}
 
-	expected = `http_bytes_total{hostname="www.example.com",status="304"} 1790`
+	expected = `section_http_bytes_total{hostname="www.example.com",status="304"} 1790`
 	if !strings.Contains(actual, expected) {
 		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
 	}
@@ -115,12 +115,12 @@ func testBytesAndBytesSentAreRead(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	expected := `http_request_count_total{hostname="www.example.com",status="200"} 2`
+	expected := `section_http_request_count_total{hostname="www.example.com",status="200"} 2`
 	if !strings.Contains(actual, expected) {
 		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
 	}
 
-	expected = `http_bytes_total{hostname="www.example.com",status="200"} 30`
+	expected = `section_http_bytes_total{hostname="www.example.com",status="200"} 30`
 	if !strings.Contains(actual, expected) {
 		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
 	}
@@ -141,12 +141,12 @@ func testInvalidBytesAndBytesSent(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	expected := `http_request_count_total{hostname="www.example.com",status="200"} 4`
+	expected := `section_http_request_count_total{hostname="www.example.com",status="200"} 4`
 	if !strings.Contains(actual, expected) {
 		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
 	}
 
-	expected = `http_bytes_total{hostname="www.example.com",status="200"} 30`
+	expected = `section_http_bytes_total{hostname="www.example.com",status="200"} 30`
 	if !strings.Contains(actual, expected) {
 		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
 	}
@@ -166,7 +166,7 @@ func testJSONParseErrors(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	expected := `http_json_parse_errors_total 3`
+	expected := `section_http_json_parse_errors_total 3`
 	if !strings.Contains(actual, expected) {
 		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
 	}
@@ -195,12 +195,12 @@ func testP8sServer(t *testing.T, stdout *bytes.Buffer) {
 
 	body := getP8sHTTPResponse(t)
 
-	expected := `http_request_count_total{hostname="bar.example.com",status="304"} 1`
+	expected := `section_http_request_count_total{hostname="bar.example.com",status="304"} 1`
 	if !strings.Contains(body, expected) {
 		t.Errorf("HTTP response:\n%s\n does not contain expected %s", body, expected)
 	}
 
-	expected = `http_bytes_total{hostname="www.example.com",status="304"} 1790`
+	expected = `section_http_bytes_total{hostname="www.example.com",status="304"} 1790`
 	if !strings.Contains(body, expected) {
 		t.Errorf("HTTP response:\n%s\n does not contain expected %s", body, expected)
 	}
