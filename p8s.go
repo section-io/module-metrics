@@ -24,20 +24,24 @@ var (
 	bytesTotal          *prometheus.CounterVec
 	registry            *prometheus.Registry
 
-	p8sLabels = []string{"hostname", "status"}
+	defaultP8sLabels = []string{"hostname", "status"}
+	p8sLabels []string
 
 	// MetricsURI is the address the prometheus server is listening on
 	MetricsURI string
 )
 
-func addRequest(hostname string, status string, bytes int) {
-	requestsTotal.With(prometheus.Labels{"hostname": hostname, "status": status}).Inc()
-	bytesTotal.With(prometheus.Labels{"hostname": hostname, "status": status}).Add(float64(bytes))
+func addRequest(labels map[string]string, bytes int) {
+	requestsTotal.With(labels).Inc()
+	bytesTotal.With(labels).Add(float64(bytes))
 }
 
 // InitMetrics sets up the prometheus registry and creates the metrics. Calling this
 // will reset any collected metrics
-func InitMetrics() {
+func InitMetrics(additionalLabels []string) {
+
+	p8sLabels = append(defaultP8sLabels, additionalLabels...)
+
 	const promeNamespace = "section"
 	registry = prometheus.NewRegistry()
 

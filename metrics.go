@@ -12,21 +12,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-type logLine struct {
-	Status    string `json:"status"`
-	Bytes     string `json:"bytes"`
-	BytesSent string `json:"bytes_sent"`
-	Hostname  string `json:"hostname"`
-}
-
 var (
 	filepath string
 )
 
-func (l logLine) getBytes() int {
-	bytes, _ := strconv.Atoi(l.Bytes)
+func getBytes(l map[string]string) int {
+	bytes, _ := strconv.Atoi(l["bytes"])
 	if bytes <= 0 {
-		bytes, _ = strconv.Atoi(l.BytesSent)
+		bytes, _ = strconv.Atoi(l["bytes_sent"])
 	}
 
 	return bytes
@@ -82,13 +75,18 @@ func StartReader(file io.Reader, output io.Writer, errorWriter io.Writer) {
 				panic(errors.Wrapf(writeErr, "Writing to output failed"))
 			}
 
-			var logline logLine
+			logline := map[string]string{}
 			jsonErr := json.Unmarshal(line, &logline)
 			if jsonErr != nil {
 				_, _ = fmt.Fprintf(errorWriter, "json.Unmarshal failed: %v", jsonErr)
 				jsonParseErrorTotal.Inc()
 			} else {
-				addRequest(logline.Hostname, logline.Status, logline.getBytes())
+				labelValues := map[string]string{}
+
+				for _, label := range p8sLabels {
+					labelValues[label] = logline[label]
+				}
+				addRequest(labelValues, getBytes(logline))
 			}
 
 			line, err = reader.ReadBytes('\n')
@@ -121,7 +119,7 @@ func SetupModule(path string, stdout io.Writer, stderr io.Writer) error {
 		return err
 	}
 
-	InitMetrics()
+	InitMetrics([]string{})
 
 	StartReader(reader, stdout, stderr)
 
