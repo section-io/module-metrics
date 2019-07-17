@@ -33,10 +33,23 @@ have known sanitization issues (like stripping the additional fields from `conte
 
 ## Usage
 
-```
-import metrics "github.com/section-io/module-metrics"
+There are two ways to use the module.
 
-...
+1. Using a FIFO file for the logs to be written to
 
-err := metrics.SetupModule(pathToLogFile, os.Stdout, os.Stderr, []string{"content_type"})
-```
+   This will setup the FIFO file at `pathToLogFile`, start the metrics collection and redirect all content written the log file to `os.Stdout`.
+   Any errors will be written to `os.Stderr` and the metrics will have the additional label of `content_type`.
+
+    ```
+    import metrics "github.com/section-io/module-metrics"
+    
+    ...
+    
+    err := metrics.SetupModule(pathToLogFile, os.Stdout, os.Stderr, "content_type")
+    ```
+2. Using a reader. If the logs are already in an `io.Reader` you can setup the metrics and start the reader explicitly.
+
+    ```
+    metrics.InitMetrics("content_type")
+	metrics.StartReader(logReader, os.Stdout, os.Stderr)
+    ```
