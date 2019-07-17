@@ -51,5 +51,5 @@ There are two ways to use the module.
 
     ```
     metrics.InitMetrics("content_type")
-	metrics.StartReader(logReader, os.Stdout, os.Stderr)
+    metrics.StartReader(logReader, os.Stdout, os.Stderr)
     ```
