@@ -25,3 +25,18 @@ The metrics collected are:
 The `section_io_module_name` is configured as a target label on the service monitor for the module using this module.
 
 The metrics are published as a Prometheus exporter by default on port `9000` with the path `/metrics`.
+
+## Additional Labels
+
+Metrics can have additional labels added based on fields in the log lines. These can be added as a string array when setting up the module (see code below). The valus will pass through the `sanitizeValue` function in `metrics.go` so that fields that 
+have known sanitization issues (like stripping the additional fields from `content_type`.) Additional sanitization can be added to this function as needed. The additional lables need to be valid Prometheus labels (see https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels).  This is required, but not currently enforced by the code. The additional lables also need to match the name of a field in the log lines. Lines that do not have the field will create a metric with a blank label value.
+
+## Usage
+
+```
+import metrics "github.com/section-io/module-metrics"
+
+...
+
+err := metrics.SetupModule(pathToLogFile, os.Stdout, os.Stderr, []string{"content_type"})
+```
