@@ -54,6 +54,13 @@ func TestSanitizeContentTypeNoSemiColon(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
+func TestSanitizeContentTypeEmpty(t *testing.T) {
+	const expected = ""
+	actual := sanitizeValue("content_type", "")
+
+	assert.Equal(t, expected, actual)
+}
+
 func TestUnsanitizedLabel(t *testing.T) {
 	const expected = " fooooo3iwac "
 	actual := sanitizeValue("some_unknown_type", expected)
