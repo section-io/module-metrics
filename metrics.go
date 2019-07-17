@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 	"syscall"
 
 	"github.com/pkg/errors"
@@ -15,6 +16,15 @@ import (
 var (
 	filepath string
 )
+
+func sanitizeValue(label string, value string) string {
+	switch label {
+	case "content_type":
+		return strings.TrimSpace(strings.Split(value, ";")[0])
+	default:
+		return value
+	}
+}
 
 func getBytes(l map[string]string) int {
 	bytes, _ := strconv.Atoi(l["bytes"])
@@ -84,7 +94,7 @@ func StartReader(file io.Reader, output io.Writer, errorWriter io.Writer) {
 				labelValues := map[string]string{}
 
 				for _, label := range p8sLabels {
-					labelValues[label] = logline[label]
+					labelValues[label] = sanitizeValue(label, logline[label])
 				}
 				addRequest(labelValues, getBytes(logline))
 			}

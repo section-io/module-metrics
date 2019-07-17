@@ -25,7 +25,7 @@ var (
 	registry            *prometheus.Registry
 
 	defaultP8sLabels = []string{"hostname", "status"}
-	p8sLabels []string
+	p8sLabels        []string
 
 	// MetricsURI is the address the prometheus server is listening on
 	MetricsURI string

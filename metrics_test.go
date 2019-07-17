@@ -3,6 +3,8 @@ package metrics
 import (
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateLogFifo(t *testing.T) {
@@ -36,4 +38,25 @@ func TestCreateLogFifoFails(t *testing.T) {
 	if err == nil {
 		t.Errorf("CreateLogFifo didn't fail when creating %s", nonExistantPath)
 	}
+}
+
+func TestSanitizeContentType(t *testing.T) {
+	const expected = "text/html"
+	actual := sanitizeValue("content_type", "text/html; charset=iso-8859-1")
+
+	assert.Equal(t, expected, actual)
+}
+
+func TestSanitizeContentTypeNoSemiColon(t *testing.T) {
+	const expected = "text/html"
+	actual := sanitizeValue("content_type", "text/html")
+
+	assert.Equal(t, expected, actual)
+}
+
+func TestUnsanitizedLabel(t *testing.T) {
+	const expected = " fooooo3iwac "
+	actual := sanitizeValue("some_unknown_type", expected)
+
+	assert.Equal(t, expected, actual)
 }
