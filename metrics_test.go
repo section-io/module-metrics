@@ -65,6 +65,34 @@ func TestSanitizeNil(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
+func TestSanitizeHostname(t *testing.T) {
+	const expected = "www.foo.com"
+	actual := sanitizeValue("hostname", "www.foo.com")
+
+	assert.Equal(t, expected, actual)
+}
+
+func TestSanitizeHostnameWithPort(t *testing.T) {
+	const expected = "www.foo.com"
+	actual := sanitizeValue("hostname", "www.foo.com:80")
+
+	assert.Equal(t, expected, actual)
+}
+
+func TestSanitizeHostnameWithSpaces(t *testing.T) {
+	const expected = "www.foo.com"
+	actual := sanitizeValue("hostname", "   www.foo.com   ")
+
+	assert.Equal(t, expected, actual)
+}
+
+func TestSanitizeHostnameMissing(t *testing.T) {
+	const expected = ""
+	actual := sanitizeValue("hostname", nil)
+
+	assert.Equal(t, expected, actual)
+}
+
 func TestGetBytes(t *testing.T) {
 	const expected = 5
 	actual := getBytes(map[string]interface{}{"bytes": "5"})

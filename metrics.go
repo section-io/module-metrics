@@ -28,6 +28,8 @@ func sanitizeValue(label string, value interface{}) string {
 	switch label {
 	case "content_type":
 		return strings.TrimSpace(strings.Split(labelValue, ";")[0])
+	case "hostname":
+		return strings.TrimSpace(strings.Split(labelValue, ":")[0])
 	default:
 		return labelValue
 	}
