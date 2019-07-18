@@ -27,12 +27,13 @@ func sanitizeValue(label string, value interface{}) string {
 
 	switch label {
 	case "content_type":
-		return strings.TrimSpace(strings.Split(labelValue, ";")[0])
+		labelValue = strings.Split(labelValue, ";")[0]
 	case "hostname":
-		return strings.TrimSpace(strings.Split(labelValue, ":")[0])
-	default:
-		return labelValue
+		labelValue = strings.Split(labelValue, ":")[0]
 	}
+
+	// Always trim whitespace
+	return strings.TrimSpace(labelValue)
 }
 
 func getBytes(l map[string]interface{}) int {

@@ -52,8 +52,8 @@ func TestSanitizeContentTypeEmpty(t *testing.T) {
 }
 
 func TestUnsanitizedLabel(t *testing.T) {
-	const expected = " fooooo3iwac "
-	actual := sanitizeValue("some_unknown_type", expected)
+	const expected = "fooooo3iwac"
+	actual := sanitizeValue("some_unknown_type", " fooooo3iwac ")
 
 	assert.Equal(t, expected, actual)
 }
