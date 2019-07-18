@@ -93,6 +93,13 @@ func TestSanitizeHostnameMissing(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
+func TestSanitizeMaxLength(t *testing.T) {
+	const expected = "01234567890123456789012345678901234567890123456789012345678901234567890123456789"
+	actual := sanitizeValue("hostname", "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789")
+
+	assert.Equal(t, expected, actual)
+}
+
 func TestGetBytes(t *testing.T) {
 	const expected = 5
 	actual := getBytes(map[string]interface{}{"bytes": "5"})

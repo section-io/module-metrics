@@ -13,6 +13,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const maxLabelValueLength = 80
+
 var (
 	filepath string
 )
@@ -32,8 +34,13 @@ func sanitizeValue(label string, value interface{}) string {
 		labelValue = strings.Split(labelValue, ":")[0]
 	}
 
-	// Always trim whitespace
-	return strings.TrimSpace(labelValue)
+	labelValue = strings.TrimSpace(labelValue)
+
+	if len(labelValue) > maxLabelValueLength {
+		labelValue = labelValue[0:maxLabelValueLength]
+	}
+
+	return labelValue
 }
 
 func getBytes(l map[string]interface{}) int {
