@@ -17,22 +17,36 @@ var (
 	filepath string
 )
 
-func sanitizeValue(label string, value string) string {
+func sanitizeValue(label string, value interface{}) string {
+
+	// Convert to a string, no matter what underlying type it is
+	var labelValue string
+	if value != nil {
+		labelValue = fmt.Sprintf("%v", value)
+	}
+
 	switch label {
 	case "content_type":
-		return strings.TrimSpace(strings.Split(value, ";")[0])
+		return strings.TrimSpace(strings.Split(labelValue, ";")[0])
 	default:
-		return value
+		return labelValue
 	}
 }
 
-func getBytes(l map[string]string) int {
-	bytes, _ := strconv.Atoi(l["bytes"])
-	if bytes <= 0 {
-		bytes, _ = strconv.Atoi(l["bytes_sent"])
+func getBytes(l map[string]interface{}) int {
+
+	var bytes interface{}
+	var ok bool
+
+	if bytes, ok = l["bytes"]; !ok {
+		bytes, _ = l["bytes_sent"]
 	}
 
-	return bytes
+	// Force convert to a string then to int, simpler than trying to figure out what the
+	// underlying type is. Atoi will return a 0 if the string can't be converted to an int.
+	bytes, _ = strconv.Atoi(fmt.Sprintf("%v", bytes))
+
+	return bytes.(int)
 }
 
 // CreateLogFifo creates the log pipe, will remove the file first if it already exists.
@@ -85,7 +99,7 @@ func StartReader(file io.Reader, output io.Writer, errorWriter io.Writer) {
 				panic(errors.Wrapf(writeErr, "Writing to output failed"))
 			}
 
-			logline := map[string]string{}
+			var logline map[string]interface{}
 			jsonErr := json.Unmarshal(line, &logline)
 			if jsonErr != nil {
 				_, _ = fmt.Fprintf(errorWriter, "json.Unmarshal failed: %v", jsonErr)

@@ -67,3 +67,52 @@ func TestUnsanitizedLabel(t *testing.T) {
 
 	assert.Equal(t, expected, actual)
 }
+
+func TestSanitizeNil(t *testing.T) {
+	const expected = ""
+	actual := sanitizeValue("foo", nil)
+
+	assert.Equal(t, expected, actual)
+}
+
+func TestGetBytes(t *testing.T) {
+	const expected = 5
+	actual := getBytes(map[string]interface{}{"bytes": "5"})
+
+	assert.Equal(t, expected, actual)
+}
+
+func TestGetBytesSent(t *testing.T) {
+	const expected = 5
+	actual := getBytes(map[string]interface{}{"bytes_sent": "5"})
+
+	assert.Equal(t, expected, actual)
+}
+
+func TestGetBytesInt(t *testing.T) {
+	const expected = 5
+	actual := getBytes(map[string]interface{}{"bytes": 5})
+
+	assert.Equal(t, expected, actual)
+}
+
+func TestGetBytesSentInt(t *testing.T) {
+	const expected = 5
+	actual := getBytes(map[string]interface{}{"bytes_sent": 5})
+
+	assert.Equal(t, expected, actual)
+}
+
+func TestGetBytesDash(t *testing.T) {
+	const expected = 0
+	actual := getBytes(map[string]interface{}{"bytes": "-"})
+
+	assert.Equal(t, expected, actual)
+}
+
+func TestGetBytesMissing(t *testing.T) {
+	const expected = 0
+	actual := getBytes(map[string]interface{}{"somthing": "foo"})
+
+	assert.Equal(t, expected, actual)
+}
