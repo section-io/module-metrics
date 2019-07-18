@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -23,21 +24,28 @@ var (
 	requestsTotal       *prometheus.CounterVec
 	bytesTotal          *prometheus.CounterVec
 	registry            *prometheus.Registry
+	httpServer          *http.Server
 
-	p8sLabels = []string{"hostname", "status"}
+	defaultP8sLabels = []string{"hostname", "status"}
+	p8sLabels        []string
+
+	p8sHTTPServerStarted = false
 
 	// MetricsURI is the address the prometheus server is listening on
 	MetricsURI string
 )
 
-func addRequest(hostname string, status string, bytes int) {
-	requestsTotal.With(prometheus.Labels{"hostname": hostname, "status": status}).Inc()
-	bytesTotal.With(prometheus.Labels{"hostname": hostname, "status": status}).Add(float64(bytes))
+func addRequest(labels map[string]string, bytes int) {
+	requestsTotal.With(labels).Inc()
+	bytesTotal.With(labels).Add(float64(bytes))
 }
 
 // InitMetrics sets up the prometheus registry and creates the metrics. Calling this
 // will reset any collected metrics
-func InitMetrics() {
+func InitMetrics(additionalLabels ...string) {
+
+	p8sLabels = append(defaultP8sLabels, additionalLabels...)
+
 	const promeNamespace = "section"
 	registry = prometheus.NewRegistry()
 
@@ -63,10 +71,18 @@ func InitMetrics() {
 	})
 
 	registry.MustRegister(requestsTotal, bytesTotal, jsonParseErrorTotal)
+
+	startPrometheusServer(os.Stderr)
 }
 
-// StartPrometheusServer starts the prometheus HTTP server
-func StartPrometheusServer(stderr io.Writer) {
+func startPrometheusServer(stderr io.Writer) {
+
+	if p8sHTTPServerStarted {
+		err := httpServer.Shutdown(context.Background())
+		if err != nil {
+			log.Fatalf("Failed to shutdown HTTP server: %v\n", err)
+		}
+	}
 
 	metricsPath := os.Getenv("P8S_METRICS_PATH")
 	if metricsPath == "" {
@@ -80,10 +96,18 @@ func StartPrometheusServer(stderr io.Writer) {
 
 	MetricsURI = fmt.Sprintf("http://%s:%s%s", metricsAddress, metricsPort, metricsPath)
 
-	http.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	mux := http.NewServeMux()
+	mux.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+
+	httpServer = &http.Server{
+		Addr:    metricsAddress + ":" + metricsPort,
+		Handler: mux,
+	}
+
 	go func() {
+		p8sHTTPServerStarted = true
 		_, _ = fmt.Fprintf(stderr, "Listening on %s\n", MetricsURI)
-		if err := http.ListenAndServe(metricsAddress+":"+metricsPort, nil); err != nil {
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("[ERROR] failed to start HTTP server: %v\n", err)
 		}
 	}()

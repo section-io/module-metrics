@@ -7,29 +7,56 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 	"syscall"
 
 	"github.com/pkg/errors"
 )
 
-type logLine struct {
-	Status    string `json:"status"`
-	Bytes     string `json:"bytes"`
-	BytesSent string `json:"bytes_sent"`
-	Hostname  string `json:"hostname"`
-}
+const maxLabelValueLength = 80
 
 var (
 	filepath string
 )
 
-func (l logLine) getBytes() int {
-	bytes, _ := strconv.Atoi(l.Bytes)
-	if bytes <= 0 {
-		bytes, _ = strconv.Atoi(l.BytesSent)
+func sanitizeValue(label string, value interface{}) string {
+
+	// Convert to a string, no matter what underlying type it is
+	var labelValue string
+	if value != nil {
+		labelValue = fmt.Sprintf("%v", value)
 	}
 
-	return bytes
+	switch label {
+	case "content_type":
+		labelValue = strings.Split(labelValue, ";")[0]
+	case "hostname":
+		labelValue = strings.Split(labelValue, ":")[0]
+	}
+
+	labelValue = strings.TrimSpace(labelValue)
+
+	if len(labelValue) > maxLabelValueLength {
+		labelValue = labelValue[0:maxLabelValueLength]
+	}
+
+	return labelValue
+}
+
+func getBytes(l map[string]interface{}) int {
+
+	var bytes interface{}
+	var ok bool
+
+	if bytes, ok = l["bytes"]; !ok {
+		bytes, _ = l["bytes_sent"]
+	}
+
+	// Force convert to a string then to int, simpler than trying to figure out what the
+	// underlying type is. Atoi will return a 0 if the string can't be converted to an int.
+	bytes, _ = strconv.Atoi(fmt.Sprintf("%v", bytes))
+
+	return bytes.(int)
 }
 
 // CreateLogFifo creates the log pipe, will remove the file first if it already exists.
@@ -82,13 +109,18 @@ func StartReader(file io.Reader, output io.Writer, errorWriter io.Writer) {
 				panic(errors.Wrapf(writeErr, "Writing to output failed"))
 			}
 
-			var logline logLine
+			var logline map[string]interface{}
 			jsonErr := json.Unmarshal(line, &logline)
 			if jsonErr != nil {
 				_, _ = fmt.Fprintf(errorWriter, "json.Unmarshal failed: %v", jsonErr)
 				jsonParseErrorTotal.Inc()
 			} else {
-				addRequest(logline.Hostname, logline.Status, logline.getBytes())
+				labelValues := map[string]string{}
+
+				for _, label := range p8sLabels {
+					labelValues[label] = sanitizeValue(label, logline[label])
+				}
+				addRequest(labelValues, getBytes(logline))
 			}
 
 			line, err = reader.ReadBytes('\n')
@@ -110,7 +142,7 @@ func StartReader(file io.Reader, output io.Writer, errorWriter io.Writer) {
 
 // SetupModule does the default setup scenario: creating & opening the FIFO file,
 // starting the Prometheus server and starting the reader.
-func SetupModule(path string, stdout io.Writer, stderr io.Writer) error {
+func SetupModule(path string, stdout io.Writer, stderr io.Writer, additionalLabels ...string) error {
 	err := CreateLogFifo(path)
 	if err != nil {
 		return err
@@ -121,11 +153,9 @@ func SetupModule(path string, stdout io.Writer, stderr io.Writer) error {
 		return err
 	}
 
-	InitMetrics()
+	InitMetrics(additionalLabels...)
 
 	StartReader(reader, stdout, stderr)
-
-	StartPrometheusServer(stderr)
 
 	return nil
 }

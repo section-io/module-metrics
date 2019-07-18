@@ -43,5 +43,5 @@ func writeLogs(t *testing.T, logs []string) {
 	}
 
 	//Give the reader loop time to finish
-	time.Sleep(time.Second * 1)
+	time.Sleep(time.Millisecond * 10)
 }
