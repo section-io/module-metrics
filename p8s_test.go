@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/prometheus/common/expfmt"
+	"github.com/stretchr/testify/assert"
 )
 
 func getP8sHTTPResponse(t *testing.T) string {
@@ -45,29 +46,19 @@ func gatherP8sResponse(t *testing.T) string {
 func testLogsOutputEqualsInput(t *testing.T, stdout *bytes.Buffer) {
 
 	logs := []string{
-		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.070","hostname":"www.example.com","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","status":"304","bytes_sent":"358","body_bytes_sent":"0","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"304","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.070","upstream_connect_time":"0.052","upstream_response_time":"0.070","upstream_response_length":"0","upstream_bytes_received":"288","upstream_http_content_type":"-","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"-","upstream_http_transfer_encoding":"-","sent_http_content_length":"-","sent_http_content_encoding":"-","sent_http_transfer_encoding":"-","section-io-id":"cf99df8057b93ec96c0ee1253ba4c309"}`,
-		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.069","hostname":"www.example.com","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","status":"304","bytes_sent":"358","body_bytes_sent":"0","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"304","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.069","upstream_connect_time":"0.052","upstream_response_time":"0.069","upstream_response_length":"0","upstream_bytes_received":"288","upstream_http_content_type":"-","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"-","upstream_http_transfer_encoding":"-","sent_http_content_length":"-","sent_http_content_encoding":"-","sent_http_transfer_encoding":"-","section-io-id":"451e230222237f722eb49324d47142f6"}`,
-		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.070","hostname":"www.example.com","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","status":"304","bytes_sent":"358","body_bytes_sent":"0","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"304","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.070","upstream_connect_time":"0.052","upstream_response_time":"0.070","upstream_response_length":"0","upstream_bytes_received":"288","upstream_http_content_type":"-","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"-","upstream_http_transfer_encoding":"-","sent_http_content_length":"-","sent_http_content_encoding":"-","sent_http_transfer_encoding":"-","section-io-id":"4e189f278375962cd19d380562846296"}`,
-		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.075","hostname":"www.example.com","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","status":"304","bytes_sent":"358","body_bytes_sent":"0","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"304","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.075","upstream_connect_time":"0.056","upstream_response_time":"0.075","upstream_response_length":"0","upstream_bytes_received":"288","upstream_http_content_type":"-","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"-","upstream_http_transfer_encoding":"-","sent_http_content_length":"-","sent_http_content_encoding":"-","sent_http_transfer_encoding":"-","section-io-id":"6ef1b5083893627d2426e42206d78f70"}`,
-		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.077","hostname":"www.example.com","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","status":"200","bytes_sent":"1959","body_bytes_sent":"1498","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"200","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.077","upstream_connect_time":"0.057","upstream_response_time":"0.077","upstream_response_length":"1498","upstream_bytes_received":"1889","upstream_http_content_type":"application/javascript","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"gzip","upstream_http_transfer_encoding":"chunked","sent_http_content_length":"-","sent_http_content_encoding":"gzip","sent_http_transfer_encoding":"chunked","section-io-id":"b1ea9bc0be7edfc997bc18a9f6b20d68"}`,
-		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.073","hostname":"www.example.com","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","status":"304","bytes_sent":"358","body_bytes_sent":"0","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"304","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.073","upstream_connect_time":"0.055","upstream_response_time":"0.073","upstream_response_length":"0","upstream_bytes_received":"288","upstream_http_content_type":"-","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"-","upstream_http_transfer_encoding":"-","sent_http_content_length":"-","sent_http_content_encoding":"-","sent_http_transfer_encoding":"-","section-io-id":"ff3117bb0ac0307d8d0e78fc8b8ba5c7"}`,
-		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.070","hostname":"www.example.com","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","status":"304","bytes_sent":"358","body_bytes_sent":"0","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"304","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.070","upstream_connect_time":"0.052","upstream_response_time":"0.070","upstream_response_length":"0","upstream_bytes_received":"288","upstream_http_content_type":"-","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"-","upstream_http_transfer_encoding":"-","sent_http_content_length":"-","sent_http_content_encoding":"-","sent_http_transfer_encoding":"-","section-io-id":"85e833ae62745c50492c80b4d7b78016"}`,
-		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.072","hostname":"www.example.com","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","status":"304","bytes_sent":"358","body_bytes_sent":"0","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"304","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.072","upstream_connect_time":"0.054","upstream_response_time":"0.072","upstream_response_length":"0","upstream_bytes_received":"288","upstream_http_content_type":"-","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"-","upstream_http_transfer_encoding":"-","sent_http_content_length":"-","sent_http_content_encoding":"-","sent_http_transfer_encoding":"-","section-io-id":"a095e3c2c3a0f25b4bbca4c941babd76"}`,
-		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.071","hostname":"www.example.com","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","status":"304","bytes_sent":"358","body_bytes_sent":"0","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"304","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.071","upstream_connect_time":"0.053","upstream_response_time":"0.071","upstream_response_length":"0","upstream_bytes_received":"288","upstream_http_content_type":"-","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"-","upstream_http_transfer_encoding":"-","sent_http_content_length":"-","sent_http_content_encoding":"-","sent_http_transfer_encoding":"-","section-io-id":"8fb3941b35418bdfa1946ef02c90e8c7"}`,
-		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.075","hostname":"www.example.com","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","status":"200","bytes_sent":"2126","body_bytes_sent":"1665","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"200","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.075","upstream_connect_time":"0.056","upstream_response_time":"0.075","upstream_response_length":"1665","upstream_bytes_received":"2056","upstream_http_content_type":"application/javascript","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"gzip","upstream_http_transfer_encoding":"chunked","sent_http_content_length":"-","sent_http_content_encoding":"gzip","sent_http_transfer_encoding":"chunked","section-io-id":"789addb393a18ff1caf5d776b53cf30e"}`,
+		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.070","hostname":"www.example.com","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip"}`,
+		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.069","hostname":"www.example.com","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip"}`,
+		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.070","hostname":"www.example.com","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip"}`,
+		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.075","hostname":"www.example.com","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip"}`,
 	}
 
 	InitMetrics()
 
 	writeLogs(t, logs)
 
-	outputLines := strings.Split(stdout.String(), "\n")
+	outputLines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
 
-	for i := 0; i < len(logs); i++ {
-		if logs[i] != outputLines[i] {
-			t.Errorf("Logs not equal, %s != %s", outputLines[i], logs[i])
-		}
-	}
+	assert.Equal(t, logs, outputLines)
 }
 
 func testCountersIncrease(t *testing.T, stdout *bytes.Buffer) {
@@ -91,15 +82,8 @@ func testCountersIncrease(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	expected := `section_http_request_count_total{hostname="bar.example.com",status="304"} 1`
-	if !strings.Contains(actual, expected) {
-		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
-	}
-
-	expected = `section_http_bytes_total{hostname="www.example.com",status="304"} 1790`
-	if !strings.Contains(actual, expected) {
-		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
-	}
+	assert.Contains(t, actual, `section_http_request_count_total{hostname="www.example.com",status="304"} 5`)
+	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com",status="304"} 1790`)
 }
 
 func testBytesAndBytesSentAreRead(t *testing.T, stdout *bytes.Buffer) {
@@ -115,15 +99,8 @@ func testBytesAndBytesSentAreRead(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	expected := `section_http_request_count_total{hostname="www.example.com",status="200"} 2`
-	if !strings.Contains(actual, expected) {
-		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
-	}
-
-	expected = `section_http_bytes_total{hostname="www.example.com",status="200"} 30`
-	if !strings.Contains(actual, expected) {
-		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
-	}
+	assert.Contains(t, actual, `section_http_request_count_total{hostname="www.example.com",status="200"} 2`)
+	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com",status="200"} 30`)
 }
 
 func testInvalidBytesAndBytesSent(t *testing.T, stdout *bytes.Buffer) {
@@ -141,15 +118,8 @@ func testInvalidBytesAndBytesSent(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	expected := `section_http_request_count_total{hostname="www.example.com",status="200"} 4`
-	if !strings.Contains(actual, expected) {
-		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
-	}
-
-	expected = `section_http_bytes_total{hostname="www.example.com",status="200"} 30`
-	if !strings.Contains(actual, expected) {
-		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
-	}
+	assert.Contains(t, actual, `section_http_request_count_total{hostname="www.example.com",status="200"} 4`)
+	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com",status="200"} 30`)
 }
 
 func testJSONParseErrors(t *testing.T, stdout *bytes.Buffer) {
@@ -166,10 +136,7 @@ func testJSONParseErrors(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	expected := `section_http_json_parse_errors_total 3`
-	if !strings.Contains(actual, expected) {
-		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
-	}
+	assert.Contains(t, actual, `section_http_json_parse_errors_total 3`)
 }
 
 func testP8sServer(t *testing.T, stdout *bytes.Buffer) {
@@ -191,17 +158,10 @@ func testP8sServer(t *testing.T, stdout *bytes.Buffer) {
 
 	writeLogs(t, logs)
 
-	body := getP8sHTTPResponse(t)
+	actual := getP8sHTTPResponse(t)
 
-	expected := `section_http_request_count_total{hostname="bar.example.com",status="304"} 1`
-	if !strings.Contains(body, expected) {
-		t.Errorf("HTTP response:\n%s\n does not contain expected %s", body, expected)
-	}
-
-	expected = `section_http_bytes_total{hostname="www.example.com",status="304"} 1790`
-	if !strings.Contains(body, expected) {
-		t.Errorf("HTTP response:\n%s\n does not contain expected %s", body, expected)
-	}
+	assert.Contains(t, actual, `section_http_request_count_total{hostname="bar.example.com",status="304"} 1`)
+	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com",status="304"} 1790`)
 }
 
 func testAdditionalLabelsAreUsed(t *testing.T, stdout *bytes.Buffer) {
@@ -217,15 +177,8 @@ func testAdditionalLabelsAreUsed(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	expected := `section_http_request_count_total{hostname="www.example.com",http_accept_encoding="gzip",status="200"} 2`
-	if !strings.Contains(actual, expected) {
-		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
-	}
-
-	expected = `section_http_bytes_total{hostname="www.example.com",http_accept_encoding="gzip",status="200"} 30`
-	if !strings.Contains(actual, expected) {
-		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
-	}
+	assert.Contains(t, actual, `section_http_request_count_total{hostname="www.example.com",http_accept_encoding="gzip",status="200"} 2`)
+	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com",http_accept_encoding="gzip",status="200"} 30`)
 }
 
 func testAdditionalLabelsWhenMissingFromLogs(t *testing.T, stdout *bytes.Buffer) {
@@ -241,15 +194,8 @@ func testAdditionalLabelsWhenMissingFromLogs(t *testing.T, stdout *bytes.Buffer)
 
 	actual := gatherP8sResponse(t)
 
-	expected := `section_http_request_count_total{hostname="www.example.com",missing_field="",status="200"} 2`
-	if !strings.Contains(actual, expected) {
-		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
-	}
-
-	expected = `section_http_bytes_total{hostname="www.example.com",missing_field="",status="200"} 30`
-	if !strings.Contains(actual, expected) {
-		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
-	}
+	assert.Contains(t, actual, `section_http_request_count_total{hostname="www.example.com",missing_field="",status="200"} 2`)
+	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com",missing_field="",status="200"} 30`)
 }
 
 func testNonStringProperties(t *testing.T, stdout *bytes.Buffer) {
@@ -265,15 +211,8 @@ func testNonStringProperties(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	expected := `section_http_request_count_total{bool="",hostname="www.example.com",int="12345",status="200"} 1`
-	if !strings.Contains(actual, expected) {
-		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
-	}
-
-	expected = `section_http_request_count_total{bool="true",hostname="www.example.com",int="",status="200"} 1`
-	if !strings.Contains(actual, expected) {
-		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
-	}
+	assert.Contains(t, actual, `section_http_request_count_total{bool="",hostname="www.example.com",int="12345",status="200"} 1`)
+	assert.Contains(t, actual, `section_http_request_count_total{bool="true",hostname="www.example.com",int="",status="200"} 1`)
 }
 
 func TestReaderRunning(t *testing.T) {
@@ -318,13 +257,6 @@ func TestSetupModule(t *testing.T) {
 
 	actual := gatherP8sResponse(t)
 
-	expected := `section_http_request_count_total{hostname="bar.example.com",status="304"} 1`
-	if !strings.Contains(actual, expected) {
-		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
-	}
-
-	expected = `section_http_bytes_total{hostname="www.example.com",status="304"} 1790`
-	if !strings.Contains(actual, expected) {
-		t.Errorf("Output:\n%s\n does not contain expected %s", actual, expected)
-	}
+	assert.Contains(t, actual, `section_http_request_count_total{hostname="bar.example.com",status="304"} 1`)
+	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com",status="304"} 1790`)
 }

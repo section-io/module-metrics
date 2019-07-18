@@ -10,24 +10,16 @@ import (
 func TestCreateLogFifo(t *testing.T) {
 	path := "/tmp/TestCreateLogFifo-file"
 	err := CreateLogFifo(path)
-	if err != nil {
-		t.Error(err)
-	}
+	assert.NoError(t, err)
 
 	fileinfo, err := os.Stat(path)
-	if err != nil {
-		t.Error(err)
-	}
+	assert.NoError(t, err)
 
 	mode := fileinfo.Mode()
-	if mode&os.ModeNamedPipe != os.ModeNamedPipe {
-		t.Errorf("Mode of file %s is %s does not have expected %s", path, mode, os.ModeNamedPipe)
-	}
+	assert.Equal(t, os.ModeNamedPipe, mode&os.ModeNamedPipe)
 
 	err = os.Remove(path)
-	if err != nil {
-		t.Errorf("Error removing %s: %#v", path, err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestCreateLogFifoFails(t *testing.T) {
@@ -35,9 +27,7 @@ func TestCreateLogFifoFails(t *testing.T) {
 
 	err := CreateLogFifo(nonExistantPath)
 
-	if err == nil {
-		t.Errorf("CreateLogFifo didn't fail when creating %s", nonExistantPath)
-	}
+	assert.Error(t, err)
 }
 
 func TestSanitizeContentType(t *testing.T) {
