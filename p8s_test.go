@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 )
@@ -215,6 +216,27 @@ func testNonStringProperties(t *testing.T, stdout *bytes.Buffer) {
 	assert.Contains(t, actual, `section_http_request_count_total{bool="true",hostname="www.example.com",int="",status="200"} 1`)
 }
 
+func testAdditionalMetricsAfterInit(t *testing.T, stdout *bytes.Buffer) {
+
+	logs := []string{
+		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.070","hostname":"www.example.com","status":"200","bytes":"10","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","body_bytes_sent":"0","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"304","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.070","upstream_connect_time":"0.052","upstream_response_time":"0.070","upstream_response_length":"0","upstream_bytes_received":"288","upstream_http_content_type":"-","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"-","upstream_http_transfer_encoding":"-","sent_http_content_length":"-","sent_http_content_encoding":"-","sent_http_transfer_encoding":"-","section-io-id":"cf99df8057b93ec96c0ee1253ba4c309"}`,
+		`{"time":"2019-06-20T01:34:36+00:00","request_time":"0.069","hostname":"www.example.com","status":"200","bytes_sent":"20","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","body_bytes_sent":"0","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"304","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.069","upstream_connect_time":"0.052","upstream_response_time":"0.069","upstream_response_length":"0","upstream_bytes_received":"288","upstream_http_content_type":"-","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"-","upstream_http_transfer_encoding":"-","sent_http_content_length":"-","sent_http_content_encoding":"-","sent_http_transfer_encoding":"-","section-io-id":"451e230222237f722eb49324d47142f6"}`,
+	}
+
+	counter := prometheus.NewCounter(prometheus.CounterOpts{Name: "name", Namespace: "namespace"})
+
+	registry := InitMetrics()
+	registry.MustRegister(counter)
+
+	counter.Add(5)
+
+	writeLogs(t, logs)
+
+	actual := gatherP8sResponse(t)
+
+	assert.Contains(t, actual, `namespace_name 5`)
+}
+
 func TestReaderRunning(t *testing.T) {
 	stdout := setupReader(t)
 
@@ -227,6 +249,7 @@ func TestReaderRunning(t *testing.T) {
 	t.Run("testAdditionalLabelsAreUsed", func(t *testing.T) { testAdditionalLabelsAreUsed(t, stdout) })
 	t.Run("testAdditionalLabelsWhenMissingFromLogs", func(t *testing.T) { testAdditionalLabelsWhenMissingFromLogs(t, stdout) })
 	t.Run("testNonStringProperties", func(t *testing.T) { testNonStringProperties(t, stdout) })
+	t.Run("testAdditionalMetricsAfterInit", func(t *testing.T) { testAdditionalMetricsAfterInit(t, stdout) })
 }
 
 func TestSetupModule(t *testing.T) {
