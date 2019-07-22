@@ -41,8 +41,8 @@ func addRequest(labels map[string]string, bytes int) {
 }
 
 // InitMetrics sets up the prometheus registry and creates the metrics. Calling this
-// will reset any collected metrics
-func InitMetrics(additionalLabels ...string) {
+// will reset any collected metrics. Returns the registry so additional metrics can be registered.
+func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 
 	p8sLabels = append(defaultP8sLabels, additionalLabels...)
 
@@ -72,7 +72,9 @@ func InitMetrics(additionalLabels ...string) {
 
 	registry.MustRegister(requestsTotal, bytesTotal, jsonParseErrorTotal)
 
-	startPrometheusServer(os.Stderr)
+	go startPrometheusServer(os.Stderr)
+
+	return registry
 }
 
 func startPrometheusServer(stderr io.Writer) {
@@ -104,11 +106,9 @@ func startPrometheusServer(stderr io.Writer) {
 		Handler: mux,
 	}
 
-	go func() {
-		p8sHTTPServerStarted = true
-		_, _ = fmt.Fprintf(stderr, "Listening on %s\n", MetricsURI)
-		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("[ERROR] failed to start HTTP server: %v\n", err)
-		}
-	}()
+	p8sHTTPServerStarted = true
+	_, _ = fmt.Fprintf(stderr, "Listening on %s\n", MetricsURI)
+	if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("[ERROR] failed to start HTTP server: %v\n", err)
+	}
 }
