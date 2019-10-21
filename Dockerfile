@@ -1,4 +1,4 @@
-FROM golang:1.12
+FROM golang:1.13
 
 ENV CGO_ENABLED=0
 
@@ -19,13 +19,10 @@ RUN go mod download
 
 COPY *.go ./
 
+RUN go test -short -v ./...
+RUN go test -run SetupModule -v ./...
+
 RUN gofmt -e -s -d . 2>&1 | tee /gofmt.out && test ! -s /gofmt.out
 RUN go vet .
 RUN golint -set_exit_status
-
 RUN errcheck ./...
-
-RUN go install ./...
-
-RUN go test -short -v ./...
-RUN go test -run SetupModule -v ./...
