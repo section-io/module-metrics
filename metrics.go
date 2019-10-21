@@ -29,7 +29,19 @@ func sanitizeValue(label string, value interface{}) string {
 
 	switch label {
 	case "content_type":
-		labelValue = strings.Split(labelValue, ";")[0]
+		if strings.HasPrefix(labelValue, "image") {
+			labelValue = "image"
+		} else if strings.HasPrefix(labelValue, "text/html") {
+			labelValue = "html"
+		} else if strings.HasPrefix(labelValue, "text/css") {
+			labelValue = "css"
+		} else if strings.Contains(labelValue, "javascript") {
+			labelValue = "javascript"
+		} else if labelValue == "" || labelValue == "-" {
+			labelValue = ""
+		} else {
+			labelValue = "other"
+		}
 	case "hostname":
 		labelValue = strings.Split(labelValue, ":")[0]
 	}

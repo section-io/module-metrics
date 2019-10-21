@@ -30,24 +30,54 @@ func TestCreateLogFifoFails(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestSanitizeContentType(t *testing.T) {
-	const expected = "text/html"
+func TestSanitizeContentTypeHTML(t *testing.T) {
+	const expected = "html"
 	actual := sanitizeValue("content_type", "text/html; charset=iso-8859-1")
+	assert.Equal(t, expected, actual)
 
+	actual = sanitizeValue("content_type", "text/html")
 	assert.Equal(t, expected, actual)
 }
 
-func TestSanitizeContentTypeNoSemiColon(t *testing.T) {
-	const expected = "text/html"
-	actual := sanitizeValue("content_type", "text/html")
+func TestSanitizeContentTypeImage(t *testing.T) {
+	const expected = "image"
+	actual := sanitizeValue("content_type", "image/jpg")
+	assert.Equal(t, expected, actual)
 
+	actual = sanitizeValue("content_type", "image/gif")
+	assert.Equal(t, expected, actual)
+}
+
+func TestSanitizeContentTypeCSS(t *testing.T) {
+	const expected = "css"
+	actual := sanitizeValue("content_type", "text/css")
+	assert.Equal(t, expected, actual)
+}
+
+func TestSanitizeContentTypeJavascript(t *testing.T) {
+	const expected = "javascript"
+	actual := sanitizeValue("content_type", "text/javascript")
+	assert.Equal(t, expected, actual)
+
+	actual = sanitizeValue("content_type", "application/javascript")
 	assert.Equal(t, expected, actual)
 }
 
 func TestSanitizeContentTypeEmpty(t *testing.T) {
 	const expected = ""
 	actual := sanitizeValue("content_type", "")
+	assert.Equal(t, expected, actual)
 
+	actual = sanitizeValue("content_type", "-")
+	assert.Equal(t, expected, actual)
+}
+
+func TestSanitizeContentTypeOther(t *testing.T) {
+	const expected = "other"
+	actual := sanitizeValue("content_type", "foobar")
+	assert.Equal(t, expected, actual)
+
+	actual = sanitizeValue("content_type", "text/rtf")
 	assert.Equal(t, expected, actual)
 }
 
