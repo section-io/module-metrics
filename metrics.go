@@ -156,7 +156,7 @@ func StartReader(file io.Reader, output io.Writer, errorWriter io.Writer) {
 					label, value := sanitizeLabel(label, logline[label])
 					labelValues[label] = value
 				}
-				addRequest(labelValues, getBytes(logline))
+				addRequest(labelValues, logline)
 			}
 
 			line, err = reader.ReadBytes('\n')

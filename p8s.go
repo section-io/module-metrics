@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -21,6 +22,7 @@ const (
 
 var (
 	jsonParseErrorTotal prometheus.Counter
+	pageViewTotal       prometheus.Counter
 	requestsTotal       *prometheus.CounterVec
 	bytesTotal          *prometheus.CounterVec
 	registry            *prometheus.Registry
@@ -36,9 +38,16 @@ var (
 	MetricsURI string
 )
 
-func addRequest(labels map[string]string, bytes int) {
+func addRequest(labels map[string]string, logline map[string]interface{}) {
+	bytes := getBytes(logline)
+
 	requestsTotal.With(labels).Inc()
 	bytesTotal.With(labels).Add(float64(bytes))
+
+	// Count text/html 2XX requests as page-views
+	if strings.HasPrefix(fmt.Sprintf("%v", logline["status"]), "2") && logline["content_type"] == "text/html" {
+		pageViewTotal.Inc()
+	}
 }
 
 // InitMetrics sets up the prometheus registry and creates the metrics. Calling this
@@ -70,6 +79,13 @@ func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 		Help:      "Total sum of response bytes.",
 	}, sanitizedP8sLabels)
 
+	pageViewTotal = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: promeNamespace,
+		Subsystem: promeSubsystem,
+		Name:      "page_view_total",
+		Help:      "Legacy: Total count of page views.",
+	})
+
 	jsonParseErrorTotal = prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: promeNamespace,
 		Subsystem: promeSubsystem,
@@ -77,7 +93,7 @@ func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 		Help:      "Total count of JSON parsing errors.",
 	})
 
-	registry.MustRegister(requestsTotal, bytesTotal, jsonParseErrorTotal)
+	registry.MustRegister(requestsTotal, bytesTotal, pageViewTotal, jsonParseErrorTotal)
 
 	go startPrometheusServer(os.Stderr)
 
