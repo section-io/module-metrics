@@ -21,12 +21,12 @@ var (
 
 func sanitizeValue(label string, value interface{}) string {
 
-	// Convert to a string, no matter what underlying type it is
-	var labelValue string
-	if value != nil {
-		labelValue = fmt.Sprintf("%v", value)
+	if value == nil || value == "" || value == "-" {
+		return ""
 	}
 
+	// Convert to a string, no matter what underlying type it is
+	labelValue := fmt.Sprintf("%v", value)
 	labelValue = strings.TrimSpace(labelValue)
 
 	switch label {
@@ -40,17 +40,13 @@ func sanitizeValue(label string, value interface{}) string {
 			labelValue = "css"
 		} else if strings.Contains(labelValue, "javascript") {
 			labelValue = "javascript"
-		} else if labelValue == "" || labelValue == "-" {
-			labelValue = ""
 		} else {
 			labelValue = "other"
 		}
 	case "hostname":
-		if labelValue == "-" {
+		labelValue = strings.Split(labelValue, ":")[0]
+		labelValue = strings.ToLower(labelValue)
 			labelValue = ""
-		} else {
-			labelValue = strings.Split(labelValue, ":")[0]
-			labelValue = strings.ToLower(labelValue)
 		}
 	}
 
