@@ -30,88 +30,101 @@ func TestCreateLogFifoFails(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestUnknownLabelSanitize(t *testing.T) {
+	const expectedLabel = "some_other_field"
+	const expectedValue = "foobar"
+	actual, _ := sanitizeLabel("some_other_field", "foobar")
+	assert.Equal(t, expectedLabel, actual)
+}
+
+func TestSanitizeContentTypeLabelName(t *testing.T) {
+	const expectedLabel = "content_type_bucket"
+	actual, _ := sanitizeLabel("content_type", "text/html")
+	assert.Equal(t, expectedLabel, actual)
+}
+
 func TestSanitizeContentTypeHTML(t *testing.T) {
 	const expected = "html"
-	actual := sanitizeValue("content_type", "text/html; charset=iso-8859-1")
+	_, actual := sanitizeLabel("content_type", "text/html; charset=iso-8859-1")
 	assert.Equal(t, expected, actual)
 
-	actual = sanitizeValue("content_type", "text/html")
+	_, actual = sanitizeLabel("content_type", "text/html")
 	assert.Equal(t, expected, actual)
 }
 
 func TestSanitizeContentTypeImage(t *testing.T) {
 	const expected = "image"
-	actual := sanitizeValue("content_type", "image/jpg")
+	_, actual := sanitizeLabel("content_type", "image/jpg")
 	assert.Equal(t, expected, actual)
 
-	actual = sanitizeValue("content_type", "image/gif")
+	_, actual = sanitizeLabel("content_type", "image/gif")
 	assert.Equal(t, expected, actual)
 }
 
 func TestSanitizeContentTypeCSS(t *testing.T) {
 	const expected = "css"
-	actual := sanitizeValue("content_type", "text/css")
+	_, actual := sanitizeLabel("content_type", "text/css")
 	assert.Equal(t, expected, actual)
 }
 
 func TestSanitizeContentTypeJavascript(t *testing.T) {
 	const expected = "javascript"
-	actual := sanitizeValue("content_type", "text/javascript")
+	_, actual := sanitizeLabel("content_type", "text/javascript")
 	assert.Equal(t, expected, actual)
 
-	actual = sanitizeValue("content_type", "application/javascript")
+	_, actual = sanitizeLabel("content_type", "application/javascript")
 	assert.Equal(t, expected, actual)
 }
 
 func TestSanitizeContentTypeEmpty(t *testing.T) {
 	const expected = ""
-	actual := sanitizeValue("content_type", "")
+	_, actual := sanitizeLabel("content_type", "")
 	assert.Equal(t, expected, actual)
 
-	actual = sanitizeValue("content_type", "-")
+	_, actual = sanitizeLabel("content_type", "-")
 	assert.Equal(t, expected, actual)
 }
 
 func TestSanitizeContentTypeOther(t *testing.T) {
 	const expected = "other"
-	actual := sanitizeValue("content_type", "foobar")
+	_, actual := sanitizeLabel("content_type", "foobar")
 	assert.Equal(t, expected, actual)
 
-	actual = sanitizeValue("content_type", "text/rtf")
+	_, actual = sanitizeLabel("content_type", "text/rtf")
 	assert.Equal(t, expected, actual)
 }
 
 func TestUnsanitizedLabel(t *testing.T) {
 	const expected = "fooooo3iwac"
-	actual := sanitizeValue("some_unknown_type", " fooooo3iwac ")
+	_, actual := sanitizeLabel("some_unknown_type", " fooooo3iwac ")
 
 	assert.Equal(t, expected, actual)
 }
 
 func TestSanitizeNil(t *testing.T) {
 	const expected = ""
-	actual := sanitizeValue("foo", nil)
+	_, actual := sanitizeLabel("foo", nil)
 
 	assert.Equal(t, expected, actual)
 }
 
 func TestSanitizeHostname(t *testing.T) {
 	const expected = "www.foo.com"
-	actual := sanitizeValue("hostname", "www.foo.com")
+	_, actual := sanitizeLabel("hostname", "www.foo.com")
 
 	assert.Equal(t, expected, actual)
 }
 
 func TestSanitizeHostnameWithPort(t *testing.T) {
 	const expected = "www.foo.com"
-	actual := sanitizeValue("hostname", "www.foo.com:80")
+	_, actual := sanitizeLabel("hostname", "www.foo.com:80")
 
 	assert.Equal(t, expected, actual)
 }
 
 func TestSanitizeHostnameWithSpaces(t *testing.T) {
 	const expected = "www.foo.com"
-	actual := sanitizeValue("hostname", "   www.foo.com   ")
+	_, actual := sanitizeLabel("hostname", "   www.foo.com   ")
 
 	assert.Equal(t, expected, actual)
 }
@@ -119,19 +132,19 @@ func TestSanitizeHostnameWithSpaces(t *testing.T) {
 func TestSanitizeHostnameMissing(t *testing.T) {
 	const expected = ""
 
-	actual := sanitizeValue("hostname", nil)
+	_, actual := sanitizeLabel("hostname", nil)
 	assert.Equal(t, expected, actual)
 
-	actual = sanitizeValue("hostname", "-")
+	_, actual = sanitizeLabel("hostname", "-")
 	assert.Equal(t, expected, actual)
 
-	actual = sanitizeValue("hostname", "    ")
+	_, actual = sanitizeLabel("hostname", "    ")
 	assert.Equal(t, expected, actual)
 }
 
 func TestSanitizeHostnameCasing(t *testing.T) {
 	const expected = "www.foo.com"
-	actual := sanitizeValue("hostname", "WWw.FOo.COm")
+	_, actual := sanitizeLabel("hostname", "WWw.FOo.COm")
 
 	assert.Equal(t, expected, actual)
 }
@@ -139,16 +152,16 @@ func TestSanitizeHostnameCasing(t *testing.T) {
 func TestSanitizeHostnameInvalidChars(t *testing.T) {
 	const expected = ""
 
-	actual := sanitizeValue("hostname", "www.fi$h.com")
+	_, actual := sanitizeLabel("hostname", "www.fi$h.com")
 	assert.Equal(t, expected, actual)
 
-	actual = sanitizeValue("hostname", "%(+ ")
+	_, actual = sanitizeLabel("hostname", "%(+ ")
 	assert.Equal(t, expected, actual)
 }
 
 func TestSanitizeStatus(t *testing.T) {
 	const expected = "200"
-	actual := sanitizeValue("status", "200")
+	_, actual := sanitizeLabel("status", "200")
 
 	assert.Equal(t, expected, actual)
 }
@@ -156,20 +169,20 @@ func TestSanitizeStatus(t *testing.T) {
 func TestSanitizeStatusInvalid(t *testing.T) {
 	const expected = ""
 
-	actual := sanitizeValue("status", "220")
+	_, actual := sanitizeLabel("status", "220")
 	assert.Equal(t, expected, actual)
 
-	actual = sanitizeValue("status", "foobar")
+	_, actual = sanitizeLabel("status", "foobar")
 	assert.Equal(t, expected, actual)
 
-	actual = sanitizeValue("status", "220foo")
+	_, actual = sanitizeLabel("status", "220foo")
 	assert.Equal(t, expected, actual)
 
 }
 
 func TestSanitizeMaxLength(t *testing.T) {
 	const expected = "01234567890123456789012345678901234567890123456789012345678901234567890123456789"
-	actual := sanitizeValue("hostname", "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789")
+	_, actual := sanitizeLabel("hostname", "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789")
 
 	assert.Equal(t, expected, actual)
 }

@@ -21,10 +21,10 @@ var (
 	isValidHostHeader = regexp.MustCompile(`^[a-z0-9.-]+$`).MatchString
 )
 
-func sanitizeValue(label string, value interface{}) string {
+func sanitizeLabel(label string, value interface{}) (string, string) {
 
 	if value == nil || value == "" || value == "-" {
-		return ""
+		return label, ""
 	}
 
 	// Convert to a string, no matter what underlying type it is
@@ -33,6 +33,8 @@ func sanitizeValue(label string, value interface{}) string {
 
 	switch label {
 	case "content_type":
+		label = "content_type_bucket"
+
 		labelValue = strings.ToLower(labelValue)
 		if strings.HasPrefix(labelValue, "image/") {
 			labelValue = "image"
@@ -45,6 +47,7 @@ func sanitizeValue(label string, value interface{}) string {
 		} else {
 			labelValue = "other"
 		}
+
 	case "hostname":
 		labelValue = strings.Split(labelValue, ":")[0]
 		labelValue = strings.ToLower(labelValue)
@@ -72,7 +75,7 @@ func sanitizeValue(label string, value interface{}) string {
 		labelValue = labelValue[0:maxLabelValueLength]
 	}
 
-	return labelValue
+	return label, labelValue
 }
 
 func getBytes(l map[string]interface{}) int {
@@ -149,8 +152,9 @@ func StartReader(file io.Reader, output io.Writer, errorWriter io.Writer) {
 			} else {
 				labelValues := map[string]string{}
 
-				for _, label := range p8sLabels {
-					labelValues[label] = sanitizeValue(label, logline[label])
+				for _, label := range logFieldNames {
+					label, value := sanitizeLabel(label, logline[label])
+					labelValues[label] = value
 				}
 				addRequest(labelValues, getBytes(logline))
 			}
