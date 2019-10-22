@@ -129,7 +129,7 @@ func TestSanitizeHostnameMissing(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func TestSanitizeHostnamCasing(t *testing.T) {
+func TestSanitizeHostnameCasing(t *testing.T) {
 	const expected = "www.foo.com"
 	actual := sanitizeValue("hostname", "WWw.FOo.COm")
 
