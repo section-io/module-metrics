@@ -44,6 +44,7 @@ func sanitizeValue(label string, value interface{}) string {
 		}
 	case "hostname":
 		labelValue = strings.Split(labelValue, ":")[0]
+		labelValue = strings.ToLower(labelValue)
 	}
 
 	labelValue = strings.TrimSpace(labelValue)

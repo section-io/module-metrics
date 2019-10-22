@@ -123,6 +123,13 @@ func TestSanitizeHostnameMissing(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
+func TestSanitizeHostnamCasing(t *testing.T) {
+	const expected = "www.foo.com"
+	actual := sanitizeValue("hostname", "WWw.FOo.COm")
+
+	assert.Equal(t, expected, actual)
+}
+
 func TestSanitizeMaxLength(t *testing.T) {
 	const expected = "01234567890123456789012345678901234567890123456789012345678901234567890123456789"
 	actual := sanitizeValue("hostname", "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789")
