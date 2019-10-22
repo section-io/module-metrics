@@ -27,8 +27,11 @@ func sanitizeValue(label string, value interface{}) string {
 		labelValue = fmt.Sprintf("%v", value)
 	}
 
+	labelValue = strings.TrimSpace(labelValue)
+
 	switch label {
 	case "content_type":
+		labelValue = strings.ToLower(labelValue)
 		if strings.HasPrefix(labelValue, "image") {
 			labelValue = "image"
 		} else if strings.HasPrefix(labelValue, "text/html") {
@@ -46,8 +49,6 @@ func sanitizeValue(label string, value interface{}) string {
 		labelValue = strings.Split(labelValue, ":")[0]
 		labelValue = strings.ToLower(labelValue)
 	}
-
-	labelValue = strings.TrimSpace(labelValue)
 
 	if len(labelValue) > maxLabelValueLength {
 		labelValue = labelValue[0:maxLabelValueLength]
