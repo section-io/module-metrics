@@ -46,6 +46,9 @@ func sanitizeValue(label string, value interface{}) string {
 	case "hostname":
 		labelValue = strings.Split(labelValue, ":")[0]
 		labelValue = strings.ToLower(labelValue)
+	case "status":
+		statusInt, err := strconv.Atoi(labelValue)
+		if err != nil || statusInt < 100 || statusInt > 599 {
 			labelValue = ""
 		}
 	}
