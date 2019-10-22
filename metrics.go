@@ -63,7 +63,7 @@ func sanitizeLabel(label string, value interface{}) (string, string) {
 		case statusInt >= 300 && statusInt <= 308:
 		case statusInt >= 400 && statusInt <= 431:
 		case statusInt == 499:
-		case statusInt >= 500 && statusInt <= 411:
+		case statusInt >= 500 && statusInt <= 511:
 		default:
 			// If it matches any of the above cases, do nothing (leave labelValue as is)
 			// otherwise set to blank
