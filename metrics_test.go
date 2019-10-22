@@ -136,6 +136,27 @@ func TestSanitizeHostnameCasing(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
+func TestSanitizeStatus(t *testing.T) {
+	const expected = "200"
+	actual := sanitizeValue("status", "200")
+
+	assert.Equal(t, expected, actual)
+}
+
+func TestSanitizeStatusInvalid(t *testing.T) {
+	const expected = ""
+
+	actual := sanitizeValue("status", "220")
+	assert.Equal(t, expected, actual)
+
+	actual = sanitizeValue("status", "foobar")
+	assert.Equal(t, expected, actual)
+
+	actual = sanitizeValue("status", "220foo")
+	assert.Equal(t, expected, actual)
+
+}
+
 func TestSanitizeMaxLength(t *testing.T) {
 	const expected = "01234567890123456789012345678901234567890123456789012345678901234567890123456789"
 	actual := sanitizeValue("hostname", "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789")

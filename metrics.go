@@ -47,8 +47,17 @@ func sanitizeValue(label string, value interface{}) string {
 		labelValue = strings.Split(labelValue, ":")[0]
 		labelValue = strings.ToLower(labelValue)
 	case "status":
-		statusInt, err := strconv.Atoi(labelValue)
-		if err != nil || statusInt < 100 || statusInt > 599 {
+		statusInt, _ := strconv.Atoi(labelValue)
+		switch {
+		case statusInt >= 100 && statusInt <= 103:
+		case statusInt >= 200 && statusInt <= 208:
+		case statusInt >= 300 && statusInt <= 308:
+		case statusInt >= 400 && statusInt <= 431:
+		case statusInt == 499:
+		case statusInt >= 500 && statusInt <= 411:
+		default:
+			// If it matches any of the above cases, do nothing (leave labelValue as is)
+			// otherwise set to blank
 			labelValue = ""
 		}
 	}
