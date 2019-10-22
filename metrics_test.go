@@ -118,8 +118,14 @@ func TestSanitizeHostnameWithSpaces(t *testing.T) {
 
 func TestSanitizeHostnameMissing(t *testing.T) {
 	const expected = ""
-	actual := sanitizeValue("hostname", nil)
 
+	actual := sanitizeValue("hostname", nil)
+	assert.Equal(t, expected, actual)
+
+	actual = sanitizeValue("hostname", "-")
+	assert.Equal(t, expected, actual)
+
+	actual = sanitizeValue("hostname", "    ")
 	assert.Equal(t, expected, actual)
 }
 

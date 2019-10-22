@@ -46,8 +46,12 @@ func sanitizeValue(label string, value interface{}) string {
 			labelValue = "other"
 		}
 	case "hostname":
-		labelValue = strings.Split(labelValue, ":")[0]
-		labelValue = strings.ToLower(labelValue)
+		if labelValue == "-" {
+			labelValue = ""
+		} else {
+			labelValue = strings.Split(labelValue, ":")[0]
+			labelValue = strings.ToLower(labelValue)
+		}
 	}
 
 	if len(labelValue) > maxLabelValueLength {
