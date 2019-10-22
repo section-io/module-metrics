@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -16,7 +17,8 @@ import (
 const maxLabelValueLength = 80
 
 var (
-	filepath string
+	filepath          string
+	isValidHostHeader = regexp.MustCompile(`^[a-z0-9.-]+$`).MatchString
 )
 
 func sanitizeValue(label string, value interface{}) string {
@@ -46,6 +48,10 @@ func sanitizeValue(label string, value interface{}) string {
 	case "hostname":
 		labelValue = strings.Split(labelValue, ":")[0]
 		labelValue = strings.ToLower(labelValue)
+		if !isValidHostHeader(labelValue) {
+			labelValue = ""
+		}
+
 	case "status":
 		statusInt, _ := strconv.Atoi(labelValue)
 		switch {

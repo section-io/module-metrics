@@ -136,6 +136,16 @@ func TestSanitizeHostnameCasing(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
+func TestSanitizeHostnameInvalidChars(t *testing.T) {
+	const expected = ""
+
+	actual := sanitizeValue("hostname", "www.fi$h.com")
+	assert.Equal(t, expected, actual)
+
+	actual = sanitizeValue("hostname", "%(+ ")
+	assert.Equal(t, expected, actual)
+}
+
 func TestSanitizeStatus(t *testing.T) {
 	const expected = "200"
 	actual := sanitizeValue("status", "200")
