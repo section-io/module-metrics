@@ -83,8 +83,8 @@ func testCountersIncrease(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total{hostname="www.example.com",status="304"} 5`)
-	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com",status="304"} 1790`)
+	assert.Contains(t, actual, `section_http_request_count_total{hostname="www.example.com"} 7`)
+	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com"} 5875`)
 }
 
 func testBytesAndBytesSentAreRead(t *testing.T, stdout *bytes.Buffer) {
@@ -100,8 +100,8 @@ func testBytesAndBytesSentAreRead(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total{hostname="www.example.com",status="200"} 2`)
-	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com",status="200"} 30`)
+	assert.Contains(t, actual, `section_http_request_count_total{hostname="www.example.com"} 2`)
+	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com"} 30`)
 }
 
 func testInvalidBytesAndBytesSent(t *testing.T, stdout *bytes.Buffer) {
@@ -119,8 +119,8 @@ func testInvalidBytesAndBytesSent(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total{hostname="www.example.com",status="200"} 4`)
-	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com",status="200"} 30`)
+	assert.Contains(t, actual, `section_http_request_count_total{hostname="www.example.com"} 4`)
+	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com"} 30`)
 }
 
 func testJSONParseErrors(t *testing.T, stdout *bytes.Buffer) {
@@ -161,8 +161,8 @@ func testP8sServer(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := getP8sHTTPResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total{hostname="bar.example.com",status="304"} 1`)
-	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com",status="304"} 1790`)
+	assert.Contains(t, actual, `section_http_request_count_total{hostname="bar.example.com"} 1`)
+	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com"} 5875`)
 }
 
 func testAdditionalLabelsAreUsed(t *testing.T, stdout *bytes.Buffer) {
@@ -178,8 +178,8 @@ func testAdditionalLabelsAreUsed(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total{hostname="www.example.com",http_accept_encoding="gzip",status="200"} 2`)
-	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com",http_accept_encoding="gzip",status="200"} 30`)
+	assert.Contains(t, actual, `section_http_request_count_total{hostname="www.example.com",http_accept_encoding="gzip"} 2`)
+	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com",http_accept_encoding="gzip"} 30`)
 }
 
 func testAdditionalLabelsWhenMissingFromLogs(t *testing.T, stdout *bytes.Buffer) {
@@ -195,8 +195,8 @@ func testAdditionalLabelsWhenMissingFromLogs(t *testing.T, stdout *bytes.Buffer)
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total{hostname="www.example.com",missing_field="",status="200"} 2`)
-	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com",missing_field="",status="200"} 30`)
+	assert.Contains(t, actual, `section_http_request_count_total{hostname="www.example.com",missing_field=""} 2`)
+	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com",missing_field=""} 30`)
 }
 
 func testNonStringProperties(t *testing.T, stdout *bytes.Buffer) {
@@ -212,8 +212,8 @@ func testNonStringProperties(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total{bool="",hostname="www.example.com",int="12345",status="200"} 1`)
-	assert.Contains(t, actual, `section_http_request_count_total{bool="true",hostname="www.example.com",int="",status="200"} 1`)
+	assert.Contains(t, actual, `section_http_request_count_total{bool="",hostname="www.example.com",int="12345"} 1`)
+	assert.Contains(t, actual, `section_http_request_count_total{bool="true",hostname="www.example.com",int=""} 1`)
 }
 
 func testAdditionalMetricsAfterInit(t *testing.T, stdout *bytes.Buffer) {
@@ -258,7 +258,7 @@ func TestSetupModule(t *testing.T) {
 	}
 
 	var stdout bytes.Buffer
-	err := SetupModule(fifoFilePath, &stdout, os.Stderr)
+	err := SetupModule(fifoFilePath, &stdout, os.Stderr, "status")
 	if err != nil {
 		t.Error(err)
 	}

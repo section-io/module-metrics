@@ -26,7 +26,7 @@ var (
 	registry            *prometheus.Registry
 	httpServer          *http.Server
 
-	defaultP8sLabels = []string{"hostname", "status"}
+	defaultP8sLabels = []string{"hostname"}
 	p8sLabels        []string
 
 	p8sHTTPServerStarted = false
