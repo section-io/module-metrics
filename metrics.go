@@ -34,7 +34,7 @@ func sanitizeValue(label string, value interface{}) string {
 	switch label {
 	case "content_type":
 		labelValue = strings.ToLower(labelValue)
-		if strings.HasPrefix(labelValue, "image") {
+		if strings.HasPrefix(labelValue, "image/") {
 			labelValue = "image"
 		} else if strings.HasPrefix(labelValue, "text/html") {
 			labelValue = "html"
