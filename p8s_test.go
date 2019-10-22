@@ -13,6 +13,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestIsPageView(t *testing.T) {
+	var logline = map[string]interface{}{"content_type": "text/html", "status": "200"}
+	assert.True(t, isPageView(logline))
+
+	logline = map[string]interface{}{"content_type": "text/html", "status": "201"}
+	assert.True(t, isPageView(logline))
+
+	logline = map[string]interface{}{"content_type": "text/css", "status": "200"}
+	assert.False(t, isPageView(logline))
+
+	logline = map[string]interface{}{"content_type": "text/html", "status": "404"}
+	assert.False(t, isPageView(logline))
+}
+
 func getP8sHTTPResponse(t *testing.T) string {
 	resp, err := http.Get(MetricsURI)
 	if err != nil {

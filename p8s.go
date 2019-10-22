@@ -38,14 +38,18 @@ var (
 	MetricsURI string
 )
 
+func isPageView(logline map[string]interface{}) bool {
+	// Count text/html 2XX requests as page-views
+	return strings.HasPrefix(fmt.Sprintf("%v", logline["status"]), "2") && logline["content_type"] == "text/html"
+}
+
 func addRequest(labels map[string]string, logline map[string]interface{}) {
 	bytes := getBytes(logline)
 
 	requestsTotal.With(labels).Inc()
 	bytesTotal.With(labels).Add(float64(bytes))
 
-	// Count text/html 2XX requests as page-views
-	if strings.HasPrefix(fmt.Sprintf("%v", logline["status"]), "2") && logline["content_type"] == "text/html" {
+	if isPageView(logline) {
 		pageViewTotal.Inc()
 	}
 }
