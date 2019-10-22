@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -16,31 +17,65 @@ import (
 const maxLabelValueLength = 80
 
 var (
-	filepath string
+	filepath          string
+	isValidHostHeader = regexp.MustCompile(`^[a-z0-9.-]+$`).MatchString
 )
 
-func sanitizeValue(label string, value interface{}) string {
+func sanitizeLabel(label string, value interface{}) (string, string) {
+
+	if value == nil || value == "" || value == "-" {
+		return label, ""
+	}
 
 	// Convert to a string, no matter what underlying type it is
-	var labelValue string
-	if value != nil {
-		labelValue = fmt.Sprintf("%v", value)
-	}
+	labelValue := fmt.Sprintf("%v", value)
+	labelValue = strings.TrimSpace(labelValue)
 
 	switch label {
 	case "content_type":
-		labelValue = strings.Split(labelValue, ";")[0]
+		label = "content_type_bucket"
+
+		labelValue = strings.ToLower(labelValue)
+		if strings.HasPrefix(labelValue, "image/") {
+			labelValue = "image"
+		} else if strings.HasPrefix(labelValue, "text/html") {
+			labelValue = "html"
+		} else if strings.HasPrefix(labelValue, "text/css") {
+			labelValue = "css"
+		} else if strings.Contains(labelValue, "javascript") {
+			labelValue = "javascript"
+		} else {
+			labelValue = "other"
+		}
+
 	case "hostname":
 		labelValue = strings.Split(labelValue, ":")[0]
-	}
+		labelValue = strings.ToLower(labelValue)
+		if !isValidHostHeader(labelValue) {
+			labelValue = ""
+		}
 
-	labelValue = strings.TrimSpace(labelValue)
+	case "status":
+		statusInt, _ := strconv.Atoi(labelValue)
+		switch {
+		case statusInt >= 100 && statusInt <= 103:
+		case statusInt >= 200 && statusInt <= 208:
+		case statusInt >= 300 && statusInt <= 308:
+		case statusInt >= 400 && statusInt <= 431:
+		case statusInt == 499:
+		case statusInt >= 500 && statusInt <= 511:
+		default:
+			// If it matches any of the above cases, do nothing (leave labelValue as is)
+			// otherwise set to blank
+			labelValue = ""
+		}
+	}
 
 	if len(labelValue) > maxLabelValueLength {
 		labelValue = labelValue[0:maxLabelValueLength]
 	}
 
-	return labelValue
+	return label, labelValue
 }
 
 func getBytes(l map[string]interface{}) int {
@@ -117,8 +152,9 @@ func StartReader(file io.Reader, output io.Writer, errorWriter io.Writer) {
 			} else {
 				labelValues := map[string]string{}
 
-				for _, label := range p8sLabels {
-					labelValues[label] = sanitizeValue(label, logline[label])
+				for _, label := range logFieldNames {
+					label, value := sanitizeLabel(label, logline[label])
+					labelValues[label] = value
 				}
 				addRequest(labelValues, getBytes(logline))
 			}

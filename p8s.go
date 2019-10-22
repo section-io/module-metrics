@@ -26,8 +26,9 @@ var (
 	registry            *prometheus.Registry
 	httpServer          *http.Server
 
-	defaultP8sLabels = []string{"hostname", "status"}
-	p8sLabels        []string
+	defaultP8sLabels   = []string{"hostname"}
+	logFieldNames      []string
+	sanitizedP8sLabels []string
 
 	p8sHTTPServerStarted = false
 
@@ -44,7 +45,13 @@ func addRequest(labels map[string]string, bytes int) {
 // will reset any collected metrics. Returns the registry so additional metrics can be registered.
 func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 
-	p8sLabels = append(defaultP8sLabels, additionalLabels...)
+	logFieldNames = append(defaultP8sLabels, additionalLabels...)
+
+	sanitizedP8sLabels = defaultP8sLabels
+	for _, label := range additionalLabels {
+		label, _ = sanitizeLabel(label, "dummy")
+		sanitizedP8sLabels = append(sanitizedP8sLabels, label)
+	}
 
 	const promeNamespace = "section"
 	registry = prometheus.NewRegistry()
@@ -54,14 +61,14 @@ func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 		Subsystem: promeSubsystem,
 		Name:      "request_count_total",
 		Help:      "Total count of HTTP requests.",
-	}, p8sLabels)
+	}, sanitizedP8sLabels)
 
 	bytesTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: promeNamespace,
 		Subsystem: promeSubsystem,
 		Name:      "bytes_total",
 		Help:      "Total sum of response bytes.",
-	}, p8sLabels)
+	}, sanitizedP8sLabels)
 
 	jsonParseErrorTotal = prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: promeNamespace,
