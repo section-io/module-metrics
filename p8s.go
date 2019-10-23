@@ -62,7 +62,7 @@ func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 
 	sanitizedP8sLabels = defaultP8sLabels
 	for _, label := range additionalLabels {
-		label, _ = sanitizeLabel(label, "dummy")
+		label = sanitizeLabelName(label)
 		sanitizedP8sLabels = append(sanitizedP8sLabels, label)
 	}
 
