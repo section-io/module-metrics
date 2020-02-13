@@ -138,7 +138,7 @@ func OpenReadFifo(path string) (io.ReadCloser, error) {
 // StartReader starts a loop in a goroutine that reads from the fifo file and writes out to the
 // output file. Any errors regarding parsing the log line are written to the errorWriter (eg os.Stderr)
 // but do not panic.
-func StartReader(file io.Reader, output io.Writer, errorWriter io.Writer) {
+func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 
 	go func() {
 
@@ -172,6 +172,10 @@ func StartReader(file io.Reader, output io.Writer, errorWriter io.Writer) {
 
 		// If EOF is reached the writer program closed the file, so reopen it
 		if err == io.EOF {
+			err := file.Close()
+			if err != nil {
+				panic(err)
+			}
 			file, err = OpenReadFifo(filepath)
 			if err != nil {
 				panic(err)
