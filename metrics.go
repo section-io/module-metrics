@@ -125,6 +125,17 @@ func CreateLogFifo(path string) error {
 	return nil
 }
 
+// OpenWriteFifo opens the fifo file for reading, returning the reader
+func OpenWriteFifo(path string) error {
+	// Open temp writer
+	_, err := os.OpenFile(path, os.O_WRONLY|syscall.O_NONBLOCK, os.ModeNamedPipe)
+	if err != nil {
+		return errors.Wrapf(err, "OpenWriteFifo %s failed: %v", path, err)
+	}
+
+	return nil
+}
+
 // OpenReadFifo opens the fifo file for reading, returning the reader
 func OpenReadFifo(path string) (io.ReadCloser, error) {
 	file, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NONBLOCK, os.ModeNamedPipe)
@@ -173,6 +184,7 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 		// If EOF is reached the writer program closed the file, so reopen it
 		if err == io.EOF {
 			err := file.Close()
+
 			if err != nil {
 				panic(err)
 			}
@@ -197,6 +209,11 @@ func SetupModule(path string, stdout io.Writer, stderr io.Writer, additionalLabe
 	}
 
 	reader, err := OpenReadFifo(path)
+	if err != nil {
+		return err
+	}
+
+	err = OpenWriteFifo(path)
 	if err != nil {
 		return err
 	}
