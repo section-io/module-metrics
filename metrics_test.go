@@ -200,6 +200,13 @@ func TestGetBytesSent(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
+func TestNegativeBytesSent(t *testing.T) {
+	const expected = 0
+	actual := getBytes(map[string]interface{}{"bytes_sent": "-1"})
+
+	assert.Equal(t, expected, actual)
+}
+
 func TestGetBytesInt(t *testing.T) {
 	const expected = 5
 	actual := getBytes(map[string]interface{}{"bytes": 5})

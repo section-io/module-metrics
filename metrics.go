@@ -98,6 +98,11 @@ func getBytes(l map[string]interface{}) int {
 	// underlying type is. Atoi will return a 0 if the string can't be converted to an int.
 	bytes, _ = strconv.Atoi(fmt.Sprintf("%v", bytes))
 
+	// Do not fail if bytes_sent < 0, for e.g. 499 status code
+	if bytes.(int) < 0 {
+		bytes = 0
+	}
+
 	return bytes.(int)
 }
 
