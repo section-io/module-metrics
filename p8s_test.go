@@ -25,6 +25,9 @@ func TestIsPageView(t *testing.T) {
 
 	logline = map[string]interface{}{"content_type": "text/html", "status": "404"}
 	assert.False(t, isPageView(logline))
+
+	logline = map[string]interface{}{"content_type": "text/html;charset=UTF-8", "status": "200"}
+	assert.True(t, isPageView(logline))
 }
 
 func getP8sHTTPResponse(t *testing.T) string {
