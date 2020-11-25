@@ -40,7 +40,7 @@ var (
 
 	// vars related to limiting the number of unique hostname labels
 	uniqueHostnameMap  = make(map[string]struct{})
-	maxUniqueHostnames = 20000
+	maxUniqueHostnames = 1000
 )
 
 func isPageView(logline map[string]interface{}) bool {
