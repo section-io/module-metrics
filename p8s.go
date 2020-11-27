@@ -9,7 +9,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -40,10 +39,8 @@ var (
 	MetricsURI string
 
 	// vars related to limiting the number of unique hostname labels
-	uniqueHostnameMap       = make(map[string]time.Time)
-	maxUniqueHostnames      = 20000
-	hostnameCompactInterval = 1 * time.Minute
-	nextCompactTime         = time.Now().Add(hostnameCompactInterval)
+	uniqueHostnameMap  = make(map[string]struct{})
+	maxUniqueHostnames = 1000
 )
 
 func isPageView(logline map[string]interface{}) bool {
@@ -52,20 +49,14 @@ func isPageView(logline map[string]interface{}) bool {
 }
 
 func addRequest(labels map[string]string, logline map[string]interface{}) {
-	now := time.Now()
-	uniqueHostnameMap[labels["hostname"]] = now
-	if now.After(nextCompactTime) {
-		nextCompactTime = now.Add(hostnameCompactInterval)
-		cutoffTime := now.Add(-hostnameCompactInterval)
-		for k, v := range uniqueHostnameMap {
-			if v.Before(cutoffTime) {
-				delete(uniqueHostnameMap, k)
-			}
+	_, ok := uniqueHostnameMap[labels["hostname"]]
+	if !ok {
+		if len(uniqueHostnameMap) < maxUniqueHostnames {
+			uniqueHostnameMap[labels["hostname"]] = struct{}{}
+		} else {
+			// Use hard-coded hostname so wildcard domains don't make cardinality explode.
+			labels["hostname"] = "max-hostnames-reached"
 		}
-	}
-	if len(uniqueHostnameMap) > maxUniqueHostnames {
-		// Use hard-coded hostname so wildcard domains don't make cardinality explode.
-		labels["hostname"] = "max-hostnames-reached"
 	}
 
 	bytes := getBytes(logline)
@@ -129,16 +120,6 @@ func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 		if err == nil {
 			maxUniqueHostnames = maxUniqueHostnamesInt
 			log.Printf("[DEBUG] Using %d for maxUniqueHostnames\n", maxUniqueHostnames)
-		}
-	}
-
-	hostnameCompactSecondsStr := os.Getenv("MODULE_METRICS_HOSTNAME_COMPACT_SECONDS")
-	if hostnameCompactSecondsStr != "" {
-		hostnameCompactSecondsInt, err := strconv.Atoi(maxUniqueHostnamesStr)
-		if err == nil {
-			hostnameCompactInterval = time.Second * time.Duration(hostnameCompactSecondsInt)
-			nextCompactTime = time.Now().Add(hostnameCompactInterval)
-			log.Printf("[DEBUG] Using %d seconds for hostnameCompactInterval\n", hostnameCompactSecondsInt)
 		}
 	}
 

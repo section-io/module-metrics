@@ -339,3 +339,43 @@ func TestSetupModule(t *testing.T) {
 	assert.Contains(t, actual, `section_http_request_count_total{content_type_bucket="javascript",hostname="www.example.com",status="200"} 2`)
 	assert.Contains(t, actual, `section_http_bytes_total{content_type_bucket="html",hostname="www.example.com",status="304"} 1790`)
 }
+
+func TestAddRequestUniqueHostnames(t *testing.T) {
+	InitMetrics()
+
+	// reset the map
+	uniqueHostnameMap = make(map[string]struct{})
+
+	maxUniqueHostnames = 2 // keep the test brief
+
+	logline := map[string]interface{}{
+		"bytes":        7,
+		"content_type": "text/plain",
+		"status":       "405",
+	}
+	labels := map[string]string{}
+
+	// first unique hostname
+	labels["hostname"] = "a.foo.com"
+	addRequest(labels, logline)
+	assert.Equal(t, "a.foo.com", labels["hostname"])
+	assert.Contains(t, uniqueHostnameMap, "a.foo.com")
+
+	// second unique hostname
+	labels["hostname"] = "b.foo.com"
+	addRequest(labels, logline)
+	assert.Equal(t, "b.foo.com", labels["hostname"])
+	assert.Contains(t, uniqueHostnameMap, "b.foo.com")
+
+	// third unique hostname exceeds the maximum
+	labels["hostname"] = "c.foo.com"
+	addRequest(labels, logline)
+	assert.Equal(t, "max-hostnames-reached", labels["hostname"])
+	assert.NotContains(t, uniqueHostnameMap, "c.foo.com")
+
+	// first unique hostname still counted
+	labels["hostname"] = "a.foo.com"
+	addRequest(labels, logline)
+	assert.Equal(t, "a.foo.com", labels["hostname"], "first unique hostname, second request")
+	assert.Contains(t, uniqueHostnameMap, "a.foo.com", "first unique hostname, second request")
+}
