@@ -14,7 +14,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-const maxLabelValueLength = 80
+const (
+	maxLabelValueLength = 80
+	geo_lat             = "lat"
+	geo_lon             = "lon"
+	geo_hash            = "geo_hash"
+	precision           = uint(2)
+)
 
 var (
 	filepath          string
@@ -129,14 +135,6 @@ func CreateLogFifo(path string) error {
 	filepath = path
 
 	return nil
-}
-
-func reduceGeoHashLabels(labels map[string]string) map[string]string {
-	return labels
-}
-
-func scrubGeoHashLabels(labels map[string]string) map[string]string {
-	return labels
 }
 
 // OpenWriteFifo opens the fifo file for reading, returning the reader
