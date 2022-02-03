@@ -54,14 +54,22 @@ func addRequest(labels map[string]string, logline map[string]interface{}) {
 		if len(uniqueHostnameMap) < maxUniqueHostnames {
 			uniqueHostnameMap[labels["hostname"]] = struct{}{}
 		} else {
-			// Use hard-coded hostname so wildcard domains don't make cardinality explode.
+			// Use hard-coded hostname so wildcard domains don't make
+			// cardinality explode.
 			labels["hostname"] = "max-hostnames-reached"
 		}
 	}
 
 	bytes := getBytes(logline)
 
-	requestsTotal.With(labels).Inc()
+	if isGeoHashing {
+		labels = reduceGeoHashLabels(labels)
+		requestsTotal.With(labels).Inc()
+		labels = scrubGeoHashLabels(labels)
+	} else {
+		requestsTotal.With(labels).Inc()
+	}
+
 	bytesTotal.With(labels).Add(float64(bytes))
 
 	if isPageView(logline) {

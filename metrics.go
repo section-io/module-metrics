@@ -19,6 +19,7 @@ const maxLabelValueLength = 80
 var (
 	filepath          string
 	isValidHostHeader = regexp.MustCompile(`^[a-z0-9.-]+$`).MatchString
+	isGeoHashing      = false
 )
 
 func sanitizeLabelName(label string) string {
@@ -130,6 +131,14 @@ func CreateLogFifo(path string) error {
 	return nil
 }
 
+func reduceGeoHashLabels(labels map[string]string) map[string]string {
+	return labels
+}
+
+func scrubGeoHashLabels(labels map[string]string) map[string]string {
+	return labels
+}
+
 // OpenWriteFifo opens the fifo file for reading, returning the reader
 func OpenWriteFifo(path string) error {
 	// Open temp writer
@@ -143,11 +152,13 @@ func OpenWriteFifo(path string) error {
 
 // OpenReadFifo opens the fifo file for reading, returning the reader
 func OpenReadFifo(path string) (io.ReadCloser, error) {
-	file, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NONBLOCK, os.ModeNamedPipe)
+	file, err := os.OpenFile(
+		path,
+		os.O_RDONLY|syscall.O_NONBLOCK,
+		os.ModeNamedPipe)
 	if err != nil {
 		return nil, errors.Wrapf(err, "OpenReadFifo %s failed: %v", path, err)
 	}
-
 	return file, nil
 }
 
@@ -203,6 +214,12 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 
 		panic(errors.Wrapf(err, "ReadBytes failed"))
 	}()
+}
+
+func SetupWithGeoHash(path string, stdout io.Writer, stderr io.Writer, additionalLabels ...string) error {
+	additionalLabels = append(additionalLabels, "geohash")
+	SetupModule(path, stdout, stderr, additionalLabels...)
+	return nil
 }
 
 // SetupModule does the default setup scenario: creating & opening the FIFO file,
