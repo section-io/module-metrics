@@ -215,7 +215,8 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 }
 
 func SetupWithGeoHash(path string, stdout io.Writer, stderr io.Writer, additionalLabels ...string) error {
-	additionalLabels = append(additionalLabels, "geohash")
+	isGeoHashing = true
+	additionalLabels = append(additionalLabels, geo_hash)
 	SetupModule(path, stdout, stderr, additionalLabels...)
 	return nil
 }
