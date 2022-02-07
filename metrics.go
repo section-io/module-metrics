@@ -19,7 +19,7 @@ const (
 	geo_lat             = "lat"
 	geo_lon             = "lon"
 	geo_hash            = "geo_hash"
-	precision           = uint(2)
+	geoHashPrecision    = uint(2)
 )
 
 var (
