@@ -22,18 +22,22 @@ func convertLatLon(rawLat, rawLon string) (float64, float64, error) {
 }
 
 func reduceGeoHashLabels(labels map[string]string, stderr io.Writer) map[string]string {
-	rawLat, hasLat := labels["lat"]
-	rawLon, hasLon := labels["lon"]
+	rawLat, hasLat := labels[geoLat]
+	rawLon, hasLon := labels[geoLon]
 	if !hasLat || !hasLon {
-		labels[geo_hash] = fmt.Sprintf("%s, %s", rawLat, rawLon)
+		//TODO: actually log some kind of error instead of making this
+		//obviously bad label
+		labels[geoHash] = fmt.Sprintf("%s, %s", rawLat, rawLon)
 	}
 	lat, lon, err := convertLatLon(rawLat, rawLon)
 	if err != nil {
-		labels[geo_hash] = fmt.Sprintf("%s, %s", rawLat, rawLon)
+		//TODO: actually log some kind of error instead of making this
+		//obviously bad label
+		labels[geoHash] = fmt.Sprintf("%s, %s", rawLat, rawLon)
 		return labels
 	}
-	hash := geohash.EncodeWithPrecision(lat, lon, precision)
-	labels[geo_hash] = hash
+	hash := geohash.EncodeWithPrecision(lat, lon, geoHashPrecision)
+	labels[geoHash] = hash
 	return labels
 }
 
@@ -44,7 +48,7 @@ func scrubGeoHashAndLatLon(labels map[string]string) map[string]string {
 	rv := map[string]string{}
 	for k, v := range labels {
 		switch k {
-		case geo_hash, geo_lat, geo_lon: // remove/scrub these keys
+		case geoHash, geoLat, geoLon: // remove/scrub these keys
 			continue
 		default:
 			rv[k] = v
@@ -60,7 +64,7 @@ func scrubLatLon(labels map[string]string) map[string]string {
 	rv := map[string]string{}
 	for k, v := range labels {
 		switch k {
-		case geo_lat, geo_lon: // remove/scrub these keys
+		case geoLat, geoLon: // remove/scrub these keys
 			continue
 		default:
 			rv[k] = v

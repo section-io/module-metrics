@@ -16,9 +16,9 @@ import (
 
 const (
 	maxLabelValueLength = 80
-	geo_lat             = "lat"
-	geo_lon             = "lon"
-	geo_hash            = "geo_hash"
+	geoLat              = "lat"
+	geoLon              = "lon"
+	geoHash             = "geo_hash"
 	geoHashPrecision    = uint(2)
 )
 
@@ -26,7 +26,6 @@ var (
 	filepath          string
 	isValidHostHeader = regexp.MustCompile(`^[a-z0-9.-]+$`).MatchString
 	isGeoHashing      = false
-	isKeepingLatLon   = false
 )
 
 func sanitizeLabelName(label string) string {
@@ -217,8 +216,7 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 
 func SetupWithGeoHash(path string, stdout io.Writer, stderr io.Writer, additionalLabels ...string) error {
 	isGeoHashing = true
-	SetupModule(path, stdout, stderr, additionalLabels...)
-	return nil
+	return SetupModule(path, stdout, stderr, additionalLabels...)
 }
 
 // SetupModule does the default setup scenario: creating & opening the FIFO file,

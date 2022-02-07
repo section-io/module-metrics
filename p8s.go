@@ -103,7 +103,7 @@ func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 	logFieldNames = append(defaultP8sLabels, additionalLabels...)
 
 	if isGeoHashing {
-		logFieldNames = append(logFieldNames, []string{geo_hash, geo_lat, geo_lon}...)
+		logFieldNames = append(logFieldNames, []string{geoHash, geoLat, geoLon}...)
 	}
 
 	sanitizedP8sLabels = defaultP8sLabels
@@ -112,7 +112,7 @@ func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 		sanitizedP8sLabels = append(sanitizedP8sLabels, label)
 	}
 
-	withGeoLabel = append(sanitizedP8sLabels, geo_hash)
+	withGeoLabel = append(sanitizedP8sLabels, geoHash)
 
 	const promeNamespace = "section"
 	registry = prometheus.NewRegistry()
