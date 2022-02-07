@@ -26,6 +26,7 @@ var (
 	filepath          string
 	isValidHostHeader = regexp.MustCompile(`^[a-z0-9.-]+$`).MatchString
 	isGeoHashing      = false
+	isKeepingLatLon   = false
 )
 
 func sanitizeLabelName(label string) string {
@@ -189,7 +190,7 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 					label = sanitizeLabelName(label)
 					labelValues[label] = value
 				}
-				addRequest(labelValues, logline)
+				addRequest(labelValues, logline, output, errorWriter)
 			}
 
 			line, err = reader.ReadBytes('\n')
@@ -216,7 +217,6 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 
 func SetupWithGeoHash(path string, stdout io.Writer, stderr io.Writer, additionalLabels ...string) error {
 	isGeoHashing = true
-	additionalLabels = append(additionalLabels, geo_hash)
 	SetupModule(path, stdout, stderr, additionalLabels...)
 	return nil
 }
