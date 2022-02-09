@@ -62,9 +62,7 @@ func isPageView(logline map[string]interface{}) bool {
 
 func addRequest(
 	labels map[string]string,
-	logline map[string]interface{},
-	output io.Writer,
-	errorWriter io.Writer) {
+	logline map[string]interface{}) {
 
 	_, ok := uniqueHostnameMap[labels["hostname"]]
 	if !ok {
@@ -80,7 +78,7 @@ func addRequest(
 	bytes := getBytes(logline)
 
 	if isGeoHashing {
-		labels = reduceGeoHashLabels(labels, errorWriter)
+		labels = reduceGeoHashLabels(labels)
 		requestPairs := scrubLatLon(labels)
 		requestsTotal.With(requestPairs).Inc()
 	} else {

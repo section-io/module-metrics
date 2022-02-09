@@ -189,7 +189,10 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 					label = sanitizeLabelName(label)
 					labelValues[label] = value
 				}
-				addRequest(labelValues, logline, output, errorWriter)
+				if isGeoHashing {
+
+				}
+				addRequest(labelValues, logline)
 			}
 
 			line, err = reader.ReadBytes('\n')

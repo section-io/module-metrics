@@ -3,11 +3,66 @@ package metrics
 import (
 	"errors"
 	"fmt"
-	"io"
 	"strconv"
+	"strings"
 
 	"github.com/mmcloughlin/geohash"
 )
+
+var missingLogFields = coords{
+	missingLatLon: true,
+	missingGeo:    true,
+}
+
+type coords struct {
+	lat           string
+	lon           string
+	missingLatLon bool
+	missingGeo    bool
+	parseError    error
+}
+
+func (c coords) isZero() bool {
+	return strings.TrimSpace(c.lat) == "" && strings.TrimSpace(c.lon) == ""
+	//&&        !c.missingLat && !c.missingLon && !c.missingGeo
+}
+
+func extractGeoip(logline map[string]interface{}) coords {
+	rawGeo, ok := logline["geo"]
+	if !ok {
+		return missingLogFields
+	}
+	geo, isMap := rawGeo.(map[string]interface{})
+	if !isMap {
+		return missingLogFields
+	}
+	rawLatLon, hasLatLon := geo["latlon"]
+	latlon, isLatLonString := rawLatLon.(string)
+	lat, lon, err := extractLatLon(latlon)
+	return coords{
+		lat:           lat,
+		lon:           lon,
+		missingLatLon: !hasLatLon && !isLatLonString,
+		missingGeo:    !isMap,
+		parseError:    err,
+	}
+	panic(errors.New("not implemented"))
+}
+
+func extractLatLon(latlon string) (string, string, error) {
+	parts := strings.Split(latlon, ",")
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("found more extrat lat/lon info: %s", latlon)
+	}
+	lat, lon := parts[0], parts[1]
+	if strings.TrimSpace(lat) == "" {
+		return lat, lon, fmt.Errorf("did not parse a value for lat")
+	}
+	if strings.TrimSpace(lon) == "" {
+		return lat, lon, fmt.Errorf("did not parse a value for lon")
+	}
+	return lat, lon, nil
+}
 
 func convertLatLon(rawLat, rawLon string) (float64, float64, error) {
 	lat, latErr := strconv.ParseFloat(rawLat, 64)
@@ -21,7 +76,7 @@ func convertLatLon(rawLat, rawLon string) (float64, float64, error) {
 	return lat, lon, nil
 }
 
-func reduceGeoHashLabels(labels map[string]string, stderr io.Writer) map[string]string {
+func reduceGeoHashLabels(labels map[string]string) map[string]string {
 	rawLat, hasLat := labels[geoLat]
 	rawLon, hasLon := labels[geoLon]
 	if !hasLat || !hasLon {
