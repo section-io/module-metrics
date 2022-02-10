@@ -78,7 +78,6 @@ func addRequest(
 	bytes := getBytes(logline)
 
 	if isGeoHashing {
-		labels = reduceGeoHashLabels(labels)
 		requestPairs := scrubLatLon(labels)
 		requestsTotal.With(requestPairs).Inc()
 	} else {
@@ -110,14 +109,12 @@ func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 		sanitizedP8sLabels = append(sanitizedP8sLabels, label)
 	}
 
-	withGeoLabel = append(sanitizedP8sLabels, geoHash)
-
 	const promeNamespace = "section"
 	registry = prometheus.NewRegistry()
 
 	requestLabels = sanitizedP8sLabels
 	if isGeoHashing {
-		requestLabels = withGeoLabel
+		requestLabels = append(requestLabels, geoHash)
 	}
 
 	// request labels has geo_hash only for requests counts (not bytes)

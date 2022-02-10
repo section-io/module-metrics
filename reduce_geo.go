@@ -9,22 +9,51 @@ import (
 	"github.com/mmcloughlin/geohash"
 )
 
+const geoMissing = "missing"
+
 var missingLogFields = coords{
 	missingLatLon: true,
 	missingGeo:    true,
 }
 
 type coords struct {
-	lat           string
-	lon           string
+	lat           float64
+	lon           float64
+	rawLat        string
+	rawLon        string
 	missingLatLon bool
 	missingGeo    bool
-	parseError    error
+	extractError  error
+	convertError  error
 }
 
 func (c coords) isZero() bool {
-	return strings.TrimSpace(c.lat) == "" && strings.TrimSpace(c.lon) == ""
-	//&&        !c.missingLat && !c.missingLon && !c.missingGeo
+	return strings.TrimSpace(c.rawLat) == "" &&
+		strings.TrimSpace(c.rawLon) == "" &&
+		c.lat == 0.0 &&
+		c.lon == 0.0 &&
+		c.rawLat == "" &&
+		c.rawLon == "" &&
+		c.extractError == nil &&
+		c.convertError == nil
+}
+
+func (c coords) isValid() bool {
+	return !c.missingGeo && !c.missingLatLon &&
+		c.extractError == nil &&
+		c.convertError == nil
+}
+
+func convertLatLon(rawLat, rawLon string) (float64, float64, error) {
+	lat, latErr := strconv.ParseFloat(rawLat, 64)
+	lon, lonErr := strconv.ParseFloat(rawLon, 64)
+	if latErr != nil || lonErr != nil {
+		err := errors.New(
+			fmt.Sprintf("%+v and %+v", latErr, lonErr),
+		)
+		return lat, lon, err
+	}
+	return lat, lon, nil
 }
 
 func extractGeoip(logline map[string]interface{}) coords {
@@ -38,15 +67,18 @@ func extractGeoip(logline map[string]interface{}) coords {
 	}
 	rawLatLon, hasLatLon := geo["latlon"]
 	latlon, isLatLonString := rawLatLon.(string)
-	lat, lon, err := extractLatLon(latlon)
+	rawLat, rawLon, extractErr := extractLatLon(latlon)
+	lat, lon, convertErr := convertLatLon(rawLat, rawLon)
 	return coords{
 		lat:           lat,
 		lon:           lon,
-		missingLatLon: !hasLatLon && !isLatLonString,
+		rawLat:        rawLat,
+		rawLon:        rawLon,
+		missingLatLon: !isLatLonString && !hasLatLon,
 		missingGeo:    !isMap,
-		parseError:    err,
+		extractError:  extractErr,
+		convertError:  convertErr,
 	}
-	panic(errors.New("not implemented"))
 }
 
 func extractLatLon(latlon string) (string, string, error) {
@@ -64,41 +96,35 @@ func extractLatLon(latlon string) (string, string, error) {
 	return lat, lon, nil
 }
 
-func convertLatLon(rawLat, rawLon string) (float64, float64, error) {
-	lat, latErr := strconv.ParseFloat(rawLat, 64)
-	lon, lonErr := strconv.ParseFloat(rawLon, 64)
-	if latErr != nil || lonErr != nil {
-		err := errors.New(
-			fmt.Sprintf("%+v and %+v", latErr, lonErr),
-		)
-		return lat, lon, err
+func convertLatLonToHash(labels map[string]string, logline map[string]interface{}) map[string]string {
+	if len(labels) == 0 || labels == nil {
+		return map[string]string{geoHash: geoMissing}
 	}
-	return lat, lon, nil
-}
-
-func reduceGeoHashLabels(labels map[string]string) map[string]string {
-	rawLat, hasLat := labels[geoLat]
-	rawLon, hasLon := labels[geoLon]
-	if !hasLat || !hasLon {
-		//TODO: actually log some kind of error instead of making this
-		//obviously bad label
-		labels[geoHash] = fmt.Sprintf("%s, %s", rawLat, rawLon)
+	c := extractGeoip(logline)
+	if c.missingGeo {
+		fmt.Errorf("missing geo object %+v", logline[geoHash])
 	}
-	lat, lon, err := convertLatLon(rawLat, rawLon)
-	if err != nil {
-		//TODO: actually log some kind of error instead of making this
-		//obviously bad label
-		labels[geoHash] = fmt.Sprintf("%s, %s", rawLat, rawLon)
+	if c.missingLatLon {
+		fmt.Errorf("missing lat/lon (geo: %+v)", logline[geoHash])
+	}
+	if c.extractError != nil {
+		fmt.Errorf("parse erorr (geo: %+v", logline[geoHash])
+	}
+	if c.convertError != nil {
+		fmt.Errorf("converting raw lat/lon error: %+v", c.extractError)
+	}
+	if !c.isValid() {
+		labels[geoHash] = geoMissing
 		return labels
 	}
-	hash := geohash.EncodeWithPrecision(lat, lon, geoHashPrecision)
+	hash := geohash.EncodeWithPrecision(c.lat, c.lon, geoHashPrecision)
 	labels[geoHash] = hash
 	return labels
 }
 
 // scrubGeoHashAndLatLon must create a new map since the values of the
-// provided map could be used at some future time for after having
-// been previously provided to other calls since passed by pointer
+// provided map could be used at some future time after having been
+// previously provided to other calls since passed by pointer
 func scrubGeoHashAndLatLon(labels map[string]string) map[string]string {
 	rv := map[string]string{}
 	for k, v := range labels {

@@ -19,6 +19,8 @@ const (
 	geoLat              = "lat"
 	geoLon              = "lon"
 	geoHash             = "geo_hash"
+	geoKey              = "geo"
+	geoLatLon           = "latlon"
 	geoHashPrecision    = uint(2)
 )
 
@@ -190,7 +192,7 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 					labelValues[label] = value
 				}
 				if isGeoHashing {
-
+					labelValues = convertLatLonToHash(labelValues, logline)
 				}
 				addRequest(labelValues, logline)
 			}
