@@ -10,6 +10,55 @@ import (
 var errorExtractingExpected = errors.New("error while extracting lat/lon from log line")
 var errorConvertingExpected = errors.New("error while converting found lat/lon from log line")
 
+func mockLogLineWithGeo(latlon string) map[string]interface{} {
+	return map[string]interface{}{
+		"geo": map[string]interface{}{
+			geoLatLon: latlon,
+		},
+	}
+}
+
+func TestConvertLatLon_ProducesValidCoords(t *testing.T) {
+	emptyLabels := map[string]string{}
+	cases := []struct {
+		message string
+		logline map[string]interface{}
+	}{
+		{message: "with floats", logline: mockLogLineWithGeo("1.1,2.2")},
+		{message: "with ints", logline: mockLogLineWithGeo("1.1,2.2")},
+		{message: "with no precision", logline: mockLogLineWithGeo("1.,2.")},
+		{message: "only no precision", logline: mockLogLineWithGeo(".1,.2")},
+	}
+	for _, c := range cases {
+		labels, c := convertLatLonToHash(emptyLabels, c.logline)
+		assert.True(t, c.isValid(), "expected an valid coord %+v", c)
+		_, ok := labels[geoHash]
+		assert.True(t, ok)
+	}
+}
+
+func TestConvertLatLon_ProducesInvalidCoords(t *testing.T) {
+	emptyLabels := map[string]string{}
+	cases := []struct {
+		message string
+		logline map[string]interface{}
+	}{
+		{message: "empty latlon", logline: mockLogLineWithGeo("")},
+		{message: "only lat", logline: mockLogLineWithGeo("1.1,")},
+		{message: "only lon", logline: mockLogLineWithGeo(",1.1")},
+		{message: "too many parts", logline: mockLogLineWithGeo("1.1,1.1,")},
+		{message: "no geo object", logline: map[string]interface{}{}},
+		{message: "no geo latlon", logline: map[string]interface{}{
+			"geo": map[string]interface{}{},
+		}},
+	}
+	for _, c := range cases {
+		_, coord := convertLatLonToHash(emptyLabels, c.logline)
+		assert.False(t, coord.isValid(), "expected an invalid coord %+v", c)
+		coord.logErrors(c.logline, t.Logf)
+	}
+}
+
 func TestExtractGeoIp(t *testing.T) {
 	cases := []struct {
 		logline  map[string]interface{}
@@ -48,10 +97,21 @@ func TestExtractGeoIp(t *testing.T) {
 			},
 		},
 		{
-			message: "only lon provided",
+			message: "empty lat provided",
 			logline: map[string]interface{}{
 				"geo": map[string]interface{}{
 					"latlon": ",-33.86010",
+				},
+			},
+			expected: coords{
+				extractError: errorExtractingExpected,
+			},
+		},
+		{
+			message: "empty lon provided",
+			logline: map[string]interface{}{
+				"geo": map[string]interface{}{
+					"latlon": "-33.86010,",
 				},
 			},
 			expected: coords{
@@ -125,6 +185,15 @@ func TestExtractGeoIp(t *testing.T) {
 				rawLon: "2.2",
 			},
 		},
+		{
+			message: "geo is not a map",
+			logline: map[string]interface{}{
+				"geo": 0,
+			},
+			expected: coords{
+				missingGeo: true,
+			},
+		},
 	}
 	for _, c := range cases {
 		latlon := extractGeoip(c.logline)
@@ -166,7 +235,7 @@ func TestExtractGeoIp(t *testing.T) {
 			t, c.expected.rawLon, latlon.rawLon,
 			"message: %s, actual: %+v", c.message, latlon)
 
-		labels := convertLatLonToHash(nil, c.logline)
+		labels, _ := convertLatLonToHash(nil, c.logline)
 		assert.NotNil(t, labels)
 		_, hasHash := labels[geoHash]
 		assert.True(t, hasHash,
@@ -178,13 +247,49 @@ func TestExtractGeoIp(t *testing.T) {
 func TestConvertLatLonToHash_HandlesNilLabels(t *testing.T) {
 	var currentLabels map[string]string
 	var logline map[string]interface{}
-	labels := convertLatLonToHash(currentLabels, logline)
+	labels, _ := convertLatLonToHash(currentLabels, logline)
 	assert.NotNil(t, labels)
 }
 
 func TestConvertLatLonToHash_HandlesNilLogLine(t *testing.T) {
-	var logline map[string]interface{}
 	currentLabels := map[string]string{}
-	labels := convertLatLonToHash(currentLabels, logline)
+	var logline map[string]interface{}
+	labels, _ := convertLatLonToHash(currentLabels, logline)
 	assert.NotNil(t, labels)
+}
+
+func TestScrubLatLon(t *testing.T) {
+	cases := []struct {
+		message string
+		labels  map[string]string
+	}{
+		{
+			message: "doesn't contain geoLat or geoLon to begin with",
+			labels: map[string]string{
+				geoHash:        "abc",
+				"cluster_name": "do-sfo-k9",
+			},
+		},
+		{
+			message: "doesn't contains lat",
+			labels: map[string]string{
+				geoHash:        "abc",
+				"cluster_name": "do-sfo-k9",
+				"lat":          "1.1",
+			},
+		},
+		{
+			message: "doesn't contains lon",
+			labels: map[string]string{
+				geoHash:        "abc",
+				"cluster_name": "do-sfo-k9",
+				"lon":          "1.1",
+			},
+		},
+	}
+	for _, c := range cases {
+		actual := scrubGeoHash(c.labels)
+		_, hasGeoHash := actual[geoHash]
+		assert.False(t, hasGeoHash)
+	}
 }

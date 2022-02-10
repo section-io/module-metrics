@@ -9,8 +9,6 @@ import (
 	"github.com/mmcloughlin/geohash"
 )
 
-const geoMissing = "missing"
-
 var missingLogFields = coords{
 	missingLatLon: true,
 	missingGeo:    true,
@@ -42,6 +40,21 @@ func (c coords) isValid() bool {
 	return !c.missingGeo && !c.missingLatLon &&
 		c.extractError == nil &&
 		c.convertError == nil
+}
+
+func (c coords) logErrors(logline map[string]interface{}, logf func(f string, args ...interface{})) {
+	if c.missingGeo {
+		logf("missing geo object (geo: %+v)", logline[geoHash])
+	}
+	if c.missingLatLon {
+		logf("missing lat/lon (geo: %+v)", logline[geoHash])
+	}
+	if c.extractError != nil {
+		logf("parse error (geo: %+v)(error: %+v)", logline[geoHash], c.extractError)
+	}
+	if c.convertError != nil {
+		logf("converting raw lat/lon error: (error: %+v)", c.convertError)
+	}
 }
 
 func convertLatLon(rawLat, rawLon string) (float64, float64, error) {
@@ -96,56 +109,28 @@ func extractLatLon(latlon string) (string, string, error) {
 	return lat, lon, nil
 }
 
-func convertLatLonToHash(labels map[string]string, logline map[string]interface{}) map[string]string {
-	if len(labels) == 0 || labels == nil {
-		return map[string]string{geoHash: geoMissing}
+func convertLatLonToHash(labels map[string]string, logline map[string]interface{}) (map[string]string, coords) {
+	if labels == nil {
+		return map[string]string{geoHash: geoMissing}, coords{}
 	}
 	c := extractGeoip(logline)
-	if c.missingGeo {
-		fmt.Errorf("missing geo object %+v", logline[geoHash])
-	}
-	if c.missingLatLon {
-		fmt.Errorf("missing lat/lon (geo: %+v)", logline[geoHash])
-	}
-	if c.extractError != nil {
-		fmt.Errorf("parse erorr (geo: %+v", logline[geoHash])
-	}
-	if c.convertError != nil {
-		fmt.Errorf("converting raw lat/lon error: %+v", c.extractError)
-	}
 	if !c.isValid() {
 		labels[geoHash] = geoMissing
-		return labels
+		return labels, c
 	}
 	hash := geohash.EncodeWithPrecision(c.lat, c.lon, geoHashPrecision)
 	labels[geoHash] = hash
-	return labels
+	return labels, c
 }
 
-// scrubGeoHashAndLatLon must create a new map since the values of the
+// scrubGeoHash must create a new map since the values of the
 // provided map could be used at some future time after having been
 // previously provided to other calls since passed by pointer
-func scrubGeoHashAndLatLon(labels map[string]string) map[string]string {
+func scrubGeoHash(labels map[string]string) map[string]string {
 	rv := map[string]string{}
 	for k, v := range labels {
 		switch k {
-		case geoHash, geoLat, geoLon: // remove/scrub these keys
-			continue
-		default:
-			rv[k] = v
-		}
-	}
-	return rv
-}
-
-// scrubLatLon must create a new map since the values of the
-// provided map could be used at some future time for after having
-// been previously provided to other calls since passed by pointer
-func scrubLatLon(labels map[string]string) map[string]string {
-	rv := map[string]string{}
-	for k, v := range labels {
-		switch k {
-		case geoLat, geoLon: // remove/scrub these keys
+		case geoHash: // remove/scrub these keys
 			continue
 		default:
 			rv[k] = v
