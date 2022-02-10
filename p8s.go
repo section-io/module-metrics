@@ -60,28 +60,21 @@ func isPageView(logline map[string]interface{}) bool {
 		strings.HasPrefix(strings.ToLower(fmt.Sprintf("%v", logline["content_type"])), "text/html")
 }
 
-func addRequest(
-	labels map[string]string,
-	logline map[string]interface{}) {
+func addRequest(labels map[string]string, logline map[string]interface{}) {
 
 	_, ok := uniqueHostnameMap[labels["hostname"]]
 	if !ok {
 		if len(uniqueHostnameMap) < maxUniqueHostnames {
 			uniqueHostnameMap[labels["hostname"]] = struct{}{}
 		} else {
-			// Use hard-coded hostname so wildcard domains don't make
-			// cardinality explode.
+			// Use hard-coded hostname so wildcard domains don't make cardinality explode.
 			labels["hostname"] = "max-hostnames-reached"
 		}
 	}
 
 	bytes := getBytes(logline)
 
-	if isGeoHashing {
-		requestsTotal.With(labels).Inc()
-	} else {
-		requestsTotal.With(labels).Inc()
-	}
+	requestsTotal.With(labels).Inc()
 
 	// remove geo_hash for bytesTotal
 	bytePairs := scrubGeoHash(labels)
@@ -97,10 +90,6 @@ func addRequest(
 func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 
 	logFieldNames = append(defaultP8sLabels, additionalLabels...)
-
-	if isGeoHashing {
-		logFieldNames = append(logFieldNames, geoHash)
-	}
 
 	sanitizedP8sLabels = defaultP8sLabels
 	for _, label := range additionalLabels {
