@@ -235,9 +235,9 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 // metric label of 'geo_hash' after converting the lat/lon to a GeoIP
 // hash
 func SetupWithGeoHash(
-	precision uint,
 	path string,
 	stdout io.Writer, stderr io.Writer,
+	precision uint,
 	additionalLabels ...string) error {
 
 	isGeoHashing = true
