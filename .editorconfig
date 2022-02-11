@@ -1,0 +1,52 @@
+# editorconfig.org
+root = true
+
+[*]
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.js*]
+indent_style = space
+indent_size = 2
+
+[*.y{a,}ml]
+indent_style = space
+indent_size = 2
+
+[Makefile]
+indent_style = tab
+
+[*.patch]
+trim_trailing_whitespace = false
+
+[*.go]
+indent_style = tab
+
+[*.rb]
+indent_style = space
+indent_size = 2
+
+[*.sh]
+# https://google.github.io/styleguide/shell.xml#Indentation
+indent_style = space
+indent_size = 2
+
+[*.lua]
+# http://lua-users.org/wiki/LuaStyleGuide
+indent_style = space
+indent_size = 2
+
+[*.tf]
+indent_style = space
+indent_size = 2
+
+[*.sql]
+indent_style = space
+indent_size = 2
+
+[*.py]
+indent_style = space
+indent_size = 4
+

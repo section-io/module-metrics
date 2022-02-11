@@ -32,6 +32,8 @@ var (
 	defaultP8sLabels   = []string{"hostname"}
 	logFieldNames      []string
 	sanitizedP8sLabels []string
+	withGeoLabel       []string
+	requestLabels      []string
 
 	p8sHTTPServerStarted = false
 
@@ -43,12 +45,23 @@ var (
 	maxUniqueHostnames = 1000
 )
 
+type Logf func(format string, v ...interface{})
+
+func ShowLabels(log Logf) {
+	log("[INFO] logFieldNames %+v", logFieldNames)
+	log("[INFO] sanitizedP8sLabels %+v", sanitizedP8sLabels)
+	log("[INFO] withGeoLabel %+v", withGeoLabel)
+	log("[INFO] requestLabels %+v", requestLabels)
+}
+
 func isPageView(logline map[string]interface{}) bool {
 	// Count text/html 2XX requests as page-views
-	return strings.HasPrefix(fmt.Sprintf("%v", logline["status"]), "2") && strings.HasPrefix(strings.ToLower(fmt.Sprintf("%v", logline["content_type"])), "text/html")
+	return strings.HasPrefix(fmt.Sprintf("%v", logline["status"]), "2") &&
+		strings.HasPrefix(strings.ToLower(fmt.Sprintf("%v", logline["content_type"])), "text/html")
 }
 
 func addRequest(labels map[string]string, logline map[string]interface{}) {
+
 	_, ok := uniqueHostnameMap[labels["hostname"]]
 	if !ok {
 		if len(uniqueHostnameMap) < maxUniqueHostnames {
@@ -62,7 +75,10 @@ func addRequest(labels map[string]string, logline map[string]interface{}) {
 	bytes := getBytes(logline)
 
 	requestsTotal.With(labels).Inc()
-	bytesTotal.With(labels).Add(float64(bytes))
+
+	// remove geo_hash for bytesTotal
+	bytePairs := scrubGeoHash(labels)
+	bytesTotal.With(bytePairs).Add(float64(bytes))
 
 	if isPageView(logline) {
 		pageViewTotal.Inc()
@@ -84,12 +100,19 @@ func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 	const promeNamespace = "section"
 	registry = prometheus.NewRegistry()
 
+	requestLabels = sanitizedP8sLabels
+	if isGeoHashing {
+		requestLabels = append(requestLabels, geoHash)
+	}
+
+	// request labels has geo_hash only for requests counts (not bytes)
+	// when geo_hash is used, bytes needs doesn't use that label
 	requestsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: promeNamespace,
 		Subsystem: promeSubsystem,
 		Name:      "request_count_total",
 		Help:      "Total count of HTTP requests.",
-	}, sanitizedP8sLabels)
+	}, requestLabels)
 
 	bytesTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: promeNamespace,

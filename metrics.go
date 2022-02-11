@@ -14,11 +14,21 @@ import (
 	"github.com/pkg/errors"
 )
 
-const maxLabelValueLength = 80
+const (
+	maxLabelValueLength = 80
+	geoLat              = "lat"
+	geoLon              = "lon"
+	geoHash             = "geo_hash"
+	geoKey              = "geo"
+	geoLatLon           = "latlon"
+	geoMissing          = "missing"
+	geoHashPrecision    = uint(2)
+)
 
 var (
 	filepath          string
 	isValidHostHeader = regexp.MustCompile(`^[a-z0-9.-]+$`).MatchString
+	isGeoHashing      = false
 )
 
 func sanitizeLabelName(label string) string {
@@ -143,11 +153,13 @@ func OpenWriteFifo(path string) error {
 
 // OpenReadFifo opens the fifo file for reading, returning the reader
 func OpenReadFifo(path string) (io.ReadCloser, error) {
-	file, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NONBLOCK, os.ModeNamedPipe)
+	file, err := os.OpenFile(
+		path,
+		os.O_RDONLY|syscall.O_NONBLOCK,
+		os.ModeNamedPipe)
 	if err != nil {
 		return nil, errors.Wrapf(err, "OpenReadFifo %s failed: %v", path, err)
 	}
-
 	return file, nil
 }
 
@@ -180,6 +192,15 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 					label = sanitizeLabelName(label)
 					labelValues[label] = value
 				}
+				if isGeoHashing {
+					labelsWithGeoHash, coord := convertLatLonToHash(labelValues, logline)
+					labelValues = labelsWithGeoHash
+					if !coord.isValid() {
+						coord.logErrors(logline, func(f string, args ...interface{}) {
+							fmt.Fprintf(errorWriter, f, args...)
+						})
+					}
+				}
 				addRequest(labelValues, logline)
 			}
 
@@ -203,6 +224,11 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 
 		panic(errors.Wrapf(err, "ReadBytes failed"))
 	}()
+}
+
+func SetupWithGeoHash(path string, stdout io.Writer, stderr io.Writer, additionalLabels ...string) error {
+	isGeoHashing = true
+	return SetupModule(path, stdout, stderr, additionalLabels...)
 }
 
 // SetupModule does the default setup scenario: creating & opening the FIFO file,
