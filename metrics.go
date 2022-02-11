@@ -15,20 +15,21 @@ import (
 )
 
 const (
-	maxLabelValueLength = 80
-	geoLat              = "lat"
-	geoLon              = "lon"
-	geoHash             = "geo_hash"
-	geoKey              = "geo"
-	geoLatLon           = "latlon"
-	geoMissing          = "missing"
-	geoHashPrecision    = uint(2)
+	maxLabelValueLength     = 80
+	geoLat                  = "lat"
+	geoLon                  = "lon"
+	geoHash                 = "geo_hash"
+	geoKey                  = "geo"
+	geoLatLon               = "latlon"
+	geoMissing              = "missing"
+	geoDefaultHashPrecision = uint(2)
 )
 
 var (
-	filepath          string
-	isValidHostHeader = regexp.MustCompile(`^[a-z0-9.-]+$`).MatchString
-	isGeoHashing      = false
+	filepath               string
+	isValidHostHeader      = regexp.MustCompile(`^[a-z0-9.-]+$`).MatchString
+	isGeoHashing           = false
+	effectiveHashPrecision = geoDefaultHashPrecision
 )
 
 func sanitizeLabelName(label string) string {
@@ -197,7 +198,11 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 					labelValues = labelsWithGeoHash
 					if !coord.isValid() {
 						coord.logErrors(logline, func(f string, args ...interface{}) {
-							fmt.Fprintf(errorWriter, f, args...)
+							_, err := fmt.Fprintf(errorWriter, f, args...)
+							if err != nil {
+								panic(errors.Wrapf(err,
+									"Couldn't write to provided error writer"))
+							}
 						})
 					}
 				}
@@ -226,8 +231,21 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 	}()
 }
 
-func SetupWithGeoHash(path string, stdout io.Writer, stderr io.Writer, additionalLabels ...string) error {
+// SetupWithGeoHash looks to extract lat/lon from logs and produce a
+// metric label of 'geo_hash' after converting the lat/lon to a GeoIP
+// hash
+func SetupWithGeoHash(
+	precision uint,
+	path string,
+	stdout io.Writer, stderr io.Writer,
+	additionalLabels ...string) error {
+
 	isGeoHashing = true
+	if precision < 1 || precision > 12 {
+		effectiveHashPrecision = geoDefaultHashPrecision
+	} else {
+		effectiveHashPrecision = precision
+	}
 	return SetupModule(path, stdout, stderr, additionalLabels...)
 }
 

@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -61,9 +60,7 @@ func convertLatLon(rawLat, rawLon string) (float64, float64, error) {
 	lat, latErr := strconv.ParseFloat(rawLat, 64)
 	lon, lonErr := strconv.ParseFloat(rawLon, 64)
 	if latErr != nil || lonErr != nil {
-		err := errors.New(
-			fmt.Sprintf("%+v and %+v", latErr, lonErr),
-		)
+		err := fmt.Errorf("%+v and %+v", latErr, lonErr)
 		return lat, lon, err
 	}
 	return lat, lon, nil
@@ -118,7 +115,7 @@ func convertLatLonToHash(labels map[string]string, logline map[string]interface{
 		labels[geoHash] = geoMissing
 		return labels, c
 	}
-	hash := geohash.EncodeWithPrecision(c.lat, c.lon, geoHashPrecision)
+	hash := geohash.EncodeWithPrecision(c.lat, c.lon, effectiveHashPrecision)
 	labels[geoHash] = hash
 	return labels, c
 }

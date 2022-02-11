@@ -45,8 +45,13 @@ var (
 	maxUniqueHostnames = 1000
 )
 
+// Logf is a type that can be provided for outputing logs to specifi stream
 type Logf func(format string, v ...interface{})
 
+// ShowLabels outputs via the log function the "effective" labels
+// which can optionally include "geo_hash".  The intent is to
+// reconcile the labels used for initialization vs the ones output
+// when extracting metrics during some kind of issue
 func ShowLabels(log Logf) {
 	log("[INFO] logFieldNames %+v", logFieldNames)
 	log("[INFO] sanitizedP8sLabels %+v", sanitizedP8sLabels)
