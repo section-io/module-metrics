@@ -1,4 +1,4 @@
-FROM golang:1.13
+FROM golang:1.17
 
 ENV CGO_ENABLED=0
 
@@ -11,16 +11,12 @@ RUN go get -v \
 #  https://github.com/golang/go/wiki/Modules#how-to-use-modules
 WORKDIR /src
 
-# BEGIN pre-install dependencies to reduce time for each code change to build
 COPY go.mod go.sum ./
-# Using `go get` currently seems to miss some nested dependencies.
 RUN go mod download
-# END
 
 COPY *.go ./
 
 RUN go test -short -v ./...
-RUN go test -run SetupModule -v ./...
 
 RUN gofmt -e -s -d . 2>&1 | tee /gofmt.out && test ! -s /gofmt.out
 RUN go vet .

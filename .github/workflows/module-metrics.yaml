@@ -1,0 +1,23 @@
+name: "🛠 Run build and tests for module-metrics in Docker container"
+
+on:
+  pull_request:
+    branches: [ master ]
+    paths:
+      - '**'
+  push:
+    branches: [ master, action ]
+    paths:
+      - '**'
+
+jobs:
+  docker:
+    name: Run docker build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Run docker build
+        run: |
+          pwd
+          ./build.sh main
