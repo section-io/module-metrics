@@ -6,7 +6,7 @@ on:
     paths:
       - '**'
   push:
-    branches: [ master, action ]
+    branches: [ master, actions ]
     paths:
       - '**'
 
