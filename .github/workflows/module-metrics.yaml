@@ -6,11 +6,7 @@ on:
     paths:
       - '**'
   push:
-    branches: [ master ]
-    paths:
-      - '**'
-  push:
-    branches: [ actions ]
+    branches: [ master, action ]
     paths:
       - '**'
 
