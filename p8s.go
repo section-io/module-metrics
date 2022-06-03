@@ -19,6 +19,7 @@ const (
 	defaultMetricsPath = "/metrics"
 	defaultMetricsPort = "9000"
 	promeSubsystem     = "http"
+	promeNamespace     = "section"
 )
 
 var (
@@ -29,7 +30,6 @@ var (
 	registry            *prometheus.Registry
 	httpServer          *http.Server
 
-	defaultP8sLabels   = []string{"hostname"}
 	logFieldNames      []string
 	sanitizedP8sLabels []string
 	withGeoLabel       []string
@@ -93,17 +93,14 @@ func addRequest(labels map[string]string, logline map[string]interface{}) {
 // InitMetrics sets up the prometheus registry and creates the metrics. Calling this
 // will reset any collected metrics. Returns the registry so additional metrics can be registered.
 func InitMetrics(additionalLabels ...string) *prometheus.Registry {
+	logFieldNames = additionalLabels
 
-	logFieldNames = append(defaultP8sLabels, additionalLabels...)
-
-	sanitizedP8sLabels = defaultP8sLabels
+	// iterate over any additionalLabels passed during metrics initialization & sanitize them (if we have rules defined)
+	sanitizedP8sLabels = []string{}
 	for _, label := range additionalLabels {
 		label = sanitizeLabelName(label)
 		sanitizedP8sLabels = append(sanitizedP8sLabels, label)
 	}
-
-	const promeNamespace = "section"
-	registry = prometheus.NewRegistry()
 
 	requestLabels = sanitizedP8sLabels
 	if isGeoHashing {
@@ -140,6 +137,7 @@ func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 		Help:      "Total count of JSON parsing errors.",
 	})
 
+	registry = prometheus.NewRegistry()
 	registry.MustRegister(requestsTotal, bytesTotal, pageViewTotal, jsonParseErrorTotal)
 
 	maxUniqueHostnamesStr := os.Getenv("MODULE_METRICS_MAX_HOSTNAMES")
