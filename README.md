@@ -87,3 +87,18 @@ labels on request metrics it's important to choose a number that won't
 adversely effect your prometheus scraping.  A reasonable starting
 point is 2 characters of precision and then slowly grow from there
 keeping in mind an exponential growth.
+
+
+## Tagging and Releasing
+
+Once we merge changes from feature branch to master after code review & approval,
+we need to manually tag it
+    
+    # checkout master and fetch latest merged changes 
+    git checkout master 
+    git pull
+    # create and push tag ( version in semver format )
+    git tag -a vX.Y.Z -m'Short message describing change'
+    git push origin --tags
+
+To create a new release for this module, click on the [new release link](https://github.com/section-io/module-metrics/releases/new) and provide relevant release details and publish.
