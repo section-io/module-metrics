@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"regexp"
 	"strconv"
@@ -182,6 +183,7 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 
 			var logline map[string]interface{}
 			jsonErr := json.Unmarshal(line, &logline)
+			log.Printf("[INFO] StartReader json unmarshal Error [%v] Line %v", jsonErr, logline)
 			if jsonErr != nil {
 				_, _ = fmt.Fprintf(errorWriter, "json.Unmarshal failed: %v", jsonErr)
 				jsonParseErrorTotal.Inc()
@@ -206,6 +208,7 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 						})
 					}
 				}
+				log.Printf("[INFO] StartReader AddRequest")
 				addRequest(labelValues, logline)
 			}
 

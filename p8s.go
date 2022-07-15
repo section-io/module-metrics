@@ -66,7 +66,7 @@ func isPageView(logline map[string]interface{}) bool {
 }
 
 func addRequest(labels map[string]string, logline map[string]interface{}) {
-
+	log.Printf("[INFO] AddRequest labels %v", labels)
 	_, ok := uniqueHostnameMap[labels["hostname"]]
 	if !ok {
 		if len(uniqueHostnameMap) < maxUniqueHostnames {
@@ -76,7 +76,7 @@ func addRequest(labels map[string]string, logline map[string]interface{}) {
 			labels["hostname"] = "max-hostnames-reached"
 		}
 	}
-
+	log.Printf("[INFO] AddRequest getBytes %v", logline)
 	bytes := getBytes(logline)
 
 	requestsTotal.With(labels).Inc()
