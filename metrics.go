@@ -174,6 +174,7 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 
 		reader := bufio.NewReader(file)
 		line, err := reader.ReadBytes('\n')
+		log.Printf("[INFO] READING BYTES %v === %v\n", err, line)
 		for err == nil {
 
 			_, writeErr := output.Write(line)
@@ -255,18 +256,21 @@ func SetupWithGeoHash(
 // SetupModule does the default setup scenario: creating & opening the FIFO file,
 // starting the Prometheus server and starting the reader.
 func SetupModule(path string, stdout io.Writer, stderr io.Writer, additionalLabels ...string) error {
-	log.Printf("[INFO] ** SETUP MODULE METRICS ** %+v == %+v", path, additionalLabels)
 	err := CreateLogFifo(path)
+	log.Printf("[INFO] ** SETUP MODULE METRICS ** %+v == %+v === %v", err, path, additionalLabels)
 	if err != nil {
 		return err
 	}
 
 	reader, err := OpenReadFifo(path)
+	log.Printf("[INFO] ** READ FIFO ** %+v ", err)
+
 	if err != nil {
 		return err
 	}
 
 	err = OpenWriteFifo(path)
+	log.Printf("[INFO] ** WRITE FIFO ** %+v ", err)
 	if err != nil {
 		return err
 	}
