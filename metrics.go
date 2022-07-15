@@ -255,6 +255,7 @@ func SetupWithGeoHash(
 // SetupModule does the default setup scenario: creating & opening the FIFO file,
 // starting the Prometheus server and starting the reader.
 func SetupModule(path string, stdout io.Writer, stderr io.Writer, additionalLabels ...string) error {
+	log.Printf("[INFO] ** SETUP MODULE METRICS ** %+v == %+v", path, additionalLabels)
 	err := CreateLogFifo(path)
 	if err != nil {
 		return err
