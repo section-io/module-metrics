@@ -161,6 +161,7 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 		reader := bufio.NewReader(file)
 		line, err := reader.ReadBytes('\n')
 		for err == nil {
+			_, _ = output.Write([]byte("got line\n"))
 
 			_, writeErr := output.Write(line)
 			if writeErr != nil {
