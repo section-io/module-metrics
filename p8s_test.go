@@ -2,7 +2,7 @@ package metrics
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -37,7 +37,7 @@ func getP8sHTTPResponse(t *testing.T) string {
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Errorf("Error reading body: %#v", err)
 	}

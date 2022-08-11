@@ -16,10 +16,7 @@ import (
 
 const (
 	maxLabelValueLength     = 80
-	geoLat                  = "lat"
-	geoLon                  = "lon"
 	geoHash                 = "geo_hash"
-	geoKey                  = "geo"
 	geoLatLon               = "latlon"
 	geoMissing              = "missing"
 	geoDefaultHashPrecision = uint(2)
@@ -102,7 +99,7 @@ func getBytes(l map[string]interface{}) int {
 	var ok bool
 
 	if bytes, ok = l["bytes"]; !ok {
-		bytes, _ = l["bytes_sent"]
+		bytes = l["bytes_sent"]
 	}
 
 	// Force convert to a string then to int, simpler than trying to figure out what the
