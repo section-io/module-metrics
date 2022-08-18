@@ -12,6 +12,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -20,6 +21,7 @@ const (
 	defaultMetricsPort = "9000"
 	promeSubsystem     = "http"
 	promeNamespace     = "section"
+	hostnameLabel      = "hostname"
 )
 
 var (
@@ -29,6 +31,9 @@ var (
 	bytesTotal          *prometheus.CounterVec
 	registry            *prometheus.Registry
 	httpServer          *http.Server
+
+	requestsByHostnameTotal *prometheus.CounterVec
+	bytesByHostnameTotal    *prometheus.CounterVec
 
 	logFieldNames      []string
 	sanitizedP8sLabels []string
@@ -43,6 +48,8 @@ var (
 	// vars related to limiting the number of unique hostname labels
 	uniqueHostnameMap  = make(map[string]struct{})
 	maxUniqueHostnames = 1000
+
+	includeHostnameMetrics = false
 )
 
 // Logf is a type that can be provided for outputing logs to specifi stream
@@ -77,16 +84,21 @@ func addRequest(labels map[string]string, logline map[string]interface{}) {
 		}
 	}
 
-	bytes := getBytes(logline)
+	bytes := float64(getBytes(logline))
 
 	requestsTotal.With(labels).Inc()
 
 	// remove geo_hash for bytesTotal
 	bytePairs := scrubGeoHash(labels)
-	bytesTotal.With(bytePairs).Add(float64(bytes))
+	bytesTotal.With(bytePairs).Add(bytes)
 
 	if isPageView(logline) {
 		pageViewTotal.Inc()
+	}
+
+	if includeHostnameMetrics {
+		requestsByHostnameTotal.WithLabelValues(labels[hostnameLabel]).Inc()
+		bytesByHostnameTotal.WithLabelValues(labels[hostnameLabel]).Add(bytes)
 	}
 }
 
@@ -94,6 +106,7 @@ func addRequest(labels map[string]string, logline map[string]interface{}) {
 // will reset any collected metrics. Returns the registry so additional metrics can be registered.
 func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 	logFieldNames = additionalLabels
+	includeHostnameMetrics = false
 
 	// iterate over any additionalLabels passed during metrics initialization & sanitize them (if we have rules defined)
 	sanitizedP8sLabels = []string{}
@@ -105,6 +118,10 @@ func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 	requestLabels = sanitizedP8sLabels
 	if isGeoHashing {
 		requestLabels = append(requestLabels, geoHash)
+	}
+
+	if idx := slices.Index(sanitizedP8sLabels, hostnameLabel); idx > -1 {
+		includeHostnameMetrics = true
 	}
 
 	// request labels has geo_hash only for requests counts (not bytes)
@@ -139,6 +156,24 @@ func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 
 	registry = prometheus.NewRegistry()
 	registry.MustRegister(requestsTotal, bytesTotal, pageViewTotal, jsonParseErrorTotal)
+
+	if includeHostnameMetrics {
+		requestsByHostnameTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: promeNamespace,
+			Subsystem: promeSubsystem,
+			Name:      "request_count_by_hostname_total",
+			Help:      "Total count of HTTP requests by hostname.",
+		}, []string{hostnameLabel})
+
+		bytesByHostnameTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: promeNamespace,
+			Subsystem: promeSubsystem,
+			Name:      "bytes_by_hostname_total",
+			Help:      "Total sum of response bytes by hostname.",
+		}, []string{hostnameLabel})
+
+		registry.MustRegister(requestsByHostnameTotal, bytesByHostnameTotal)
+	}
 
 	maxUniqueHostnamesStr := os.Getenv("MODULE_METRICS_MAX_HOSTNAMES")
 	if maxUniqueHostnamesStr != "" {
