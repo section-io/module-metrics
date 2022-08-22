@@ -23,9 +23,13 @@ with the following properties:
 
 The metrics collected are:
 
-* `section_http_request_count_total{ section_io_module_name="module name", hostname="www.example.com", status="200" }` - Counter of number of HTTP requests by hostname & status.
-* `section_http_bytes_total{ section_io_module_name="module name", hostname="www.example.com", status="200" }` - Counter of sum of bytes sent downstream by hostname & status.
+* `section_http_request_count_total{ section_io_module_name="module name", status="200" }` - Counter of number of HTTP requests by status.
+* `section_http_bytes_total{ section_io_module_name="module name", status="200" }` - Counter of sum of bytes sent downstream by status.
 * `section_http_json_parse_errors_total{ section_io_module_name="module name" }` - Counter of the number of times it has been unable to JSON parse a log line.
+* `section_http_request_count_by_hostname_total{ hostname="www.example.com" }` - Counter of the number of HTTP requests by hostname.
+* `section_http_bytes_by_hostname_total{ hostname="www.example.com" }` - Counter of sum of bytes sent downstream by hostname.
+
+The `by_hostname` metrics will only be generated if `hostname` is included in the additional labels parameter.
 
 The `section_io_module_name` is configured as a target label on the
 service monitor for the module using this module.
@@ -41,10 +45,10 @@ lines. These can be added as a string array when setting up the module
 function in `metrics.go` so that fields that have known sanitization
 issues (like stripping the additional fields from `content_type`.)
 Additional sanitization can be added to this function as needed. The
-additional lables need to be valid Prometheus labels (see
+additional labels need to be valid Prometheus labels (see
 https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels).
 This is required, but not currently enforced by the code. The
-additional lables also need to match the name of a field in the log
+additional labels also need to match the name of a field in the log
 lines. Lines that do not have the field will create a metric with a
 blank label value.
 
@@ -93,9 +97,9 @@ keeping in mind an exponential growth.
 
 Once we merge changes from feature branch to master after code review & approval,
 we need to manually tag it
-    
-    # checkout master and fetch latest merged changes 
-    git checkout master 
+
+    # checkout master and fetch latest merged changes
+    git checkout master
     git pull
     # create and push tag ( version in semver format )
     git tag -a vX.Y.Z -m'Short message describing change'
