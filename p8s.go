@@ -74,14 +74,20 @@ func isPageView(logline map[string]interface{}) bool {
 
 func addRequest(labels map[string]string, logline map[string]interface{}) {
 
-	_, ok := uniqueHostnameMap[labels["hostname"]]
-	if !ok {
-		if len(uniqueHostnameMap) < maxUniqueHostnames {
-			uniqueHostnameMap[labels["hostname"]] = struct{}{}
-		} else {
-			// Use hard-coded hostname so wildcard domains don't make cardinality explode.
-			labels["hostname"] = "max-hostnames-reached"
+	hostname := ""
+	ok := false
+	if hostname, ok = labels[hostnameLabel]; ok {
+		delete(labels, hostnameLabel)
+		_, ok := uniqueHostnameMap[hostname]
+		if !ok {
+			if len(uniqueHostnameMap) < maxUniqueHostnames {
+				uniqueHostnameMap[hostname] = struct{}{}
+			} else {
+				// Use hard-coded hostname so wildcard domains don't make cardinality explode.
+				hostname = "max-hostnames-reached"
+			}
 		}
+
 	}
 
 	bytes := float64(getBytes(logline))
@@ -97,8 +103,8 @@ func addRequest(labels map[string]string, logline map[string]interface{}) {
 	}
 
 	if includeHostnameMetrics {
-		requestsByHostnameTotal.WithLabelValues(labels[hostnameLabel]).Inc()
-		bytesByHostnameTotal.WithLabelValues(labels[hostnameLabel]).Add(bytes)
+		requestsByHostnameTotal.WithLabelValues(hostname).Inc()
+		bytesByHostnameTotal.WithLabelValues(hostname).Add(bytes)
 	}
 }
 
@@ -115,13 +121,16 @@ func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 		sanitizedP8sLabels = append(sanitizedP8sLabels, label)
 	}
 
+	// If the hostname label is included, generate the by_hostname metrics and remove the hostname label from the
+	// non-by_hostname metrics to reduce cardinality.
+	if idx := slices.Index(sanitizedP8sLabels, hostnameLabel); idx > -1 {
+		includeHostnameMetrics = true
+		sanitizedP8sLabels = slices.Delete(sanitizedP8sLabels, idx, idx+1)
+	}
+
 	requestLabels = sanitizedP8sLabels
 	if isGeoHashing {
 		requestLabels = append(requestLabels, geoHash)
-	}
-
-	if idx := slices.Index(sanitizedP8sLabels, hostnameLabel); idx > -1 {
-		includeHostnameMetrics = true
 	}
 
 	// request labels has geo_hash only for requests counts (not bytes)
