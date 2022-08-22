@@ -127,8 +127,8 @@ func testCountersIncrease(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total{hostname="www.example.com"} 7`)
-	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com"} 5875`)
+	assert.Contains(t, actual, `section_http_request_count_total 10`)
+	assert.Contains(t, actual, `section_http_bytes_total 6949`)
 
 	assert.Contains(t, actual, `section_http_request_count_by_hostname_total{hostname="www.example.com"} 7`)
 	assert.Contains(t, actual, `section_http_bytes_by_hostname_total{hostname="www.example.com"} 5875`)
@@ -147,8 +147,8 @@ func testBytesAndBytesSentAreRead(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total{hostname="www.example.com"} 2`)
-	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com"} 30`)
+	assert.Contains(t, actual, `section_http_request_count_total 2`)
+	assert.Contains(t, actual, `section_http_bytes_total 30`)
 
 	assert.Contains(t, actual, `section_http_request_count_by_hostname_total{hostname="www.example.com"} 2`)
 	assert.Contains(t, actual, `section_http_bytes_by_hostname_total{hostname="www.example.com"} 30`)
@@ -169,8 +169,8 @@ func testInvalidBytesAndBytesSent(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total{hostname="www.example.com"} 4`)
-	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com"} 30`)
+	assert.Contains(t, actual, `section_http_request_count_total 4`)
+	assert.Contains(t, actual, `section_http_bytes_total 30`)
 
 	assert.Contains(t, actual, `section_http_request_count_by_hostname_total{hostname="www.example.com"} 4`)
 	assert.Contains(t, actual, `section_http_bytes_by_hostname_total{hostname="www.example.com"} 30`)
@@ -214,8 +214,8 @@ func testP8sServer(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := getP8sHTTPResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total{hostname="bar.example.com"} 1`)
-	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com"} 5875`)
+	assert.Contains(t, actual, `section_http_request_count_total 10`)
+	assert.Contains(t, actual, `section_http_bytes_total 6949`)
 
 	assert.Contains(t, actual, `section_http_request_count_by_hostname_total{hostname="www.example.com"} 7`)
 	assert.Contains(t, actual, `section_http_bytes_by_hostname_total{hostname="www.example.com"} 5875`)
@@ -234,8 +234,8 @@ func testAdditionalLabelsAreUsed(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total{hostname="www.example.com",http_accept_encoding="gzip"} 2`)
-	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com",http_accept_encoding="gzip"} 30`)
+	assert.Contains(t, actual, `section_http_request_count_total{http_accept_encoding="gzip"} 2`)
+	assert.Contains(t, actual, `section_http_bytes_total{http_accept_encoding="gzip"} 30`)
 
 	assert.Contains(t, actual, `section_http_request_count_by_hostname_total{hostname="www.example.com"} 2`)
 	assert.Contains(t, actual, `section_http_bytes_by_hostname_total{hostname="www.example.com"} 30`)
@@ -254,8 +254,8 @@ func testAdditionalLabelsWhenMissingFromLogs(t *testing.T, stdout *bytes.Buffer)
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total{hostname="www.example.com",missing_field=""} 2`)
-	assert.Contains(t, actual, `section_http_bytes_total{hostname="www.example.com",missing_field=""} 30`)
+	assert.Contains(t, actual, `section_http_request_count_total{missing_field=""} 2`)
+	assert.Contains(t, actual, `section_http_bytes_total{missing_field=""} 30`)
 
 	assert.Contains(t, actual, `section_http_request_count_by_hostname_total{hostname="www.example.com"} 2`)
 }
@@ -273,8 +273,8 @@ func testNonStringProperties(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total{bool="",hostname="www.example.com",int="12345"} 1`)
-	assert.Contains(t, actual, `section_http_request_count_total{bool="true",hostname="www.example.com",int=""} 1`)
+	assert.Contains(t, actual, `section_http_request_count_total{bool="",int="12345"} 1`)
+	assert.Contains(t, actual, `section_http_request_count_total{bool="true",int=""} 1`)
 
 	assert.Contains(t, actual, `section_http_request_count_by_hostname_total{hostname="www.example.com"} 2`)
 }
@@ -333,8 +333,8 @@ func testContentTypeBucket(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total{content_type_bucket="html",hostname="www.example.com"} 3`)
-	assert.Contains(t, actual, `section_http_request_count_total{content_type_bucket="",hostname="www.example.com"} 1`)
+	assert.Contains(t, actual, `section_http_request_count_total{content_type_bucket="html"} 3`)
+	assert.Contains(t, actual, `section_http_request_count_total{content_type_bucket=""} 1`)
 
 	assert.Contains(t, actual, `section_http_request_count_by_hostname_total{hostname="www.example.com"} 4`)
 }
@@ -387,8 +387,8 @@ func TestSetupModule(t *testing.T) {
 			labels: []string{"status", "content_type", "hostname"},
 			gatherAndAssert: func(t *testing.T) {
 				actual := gatherP8sResponse(t)
-				assert.Contains(t, actual, `section_http_request_count_total{content_type_bucket="javascript",hostname="www.example.com",status="200"} 2`)
-				assert.Contains(t, actual, `section_http_bytes_total{content_type_bucket="html",hostname="www.example.com",status="304"} 1790`)
+				assert.Contains(t, actual, `section_http_request_count_total{content_type_bucket="javascript",status="200"} 2`)
+				assert.Contains(t, actual, `section_http_bytes_total{content_type_bucket="html",status="304"} 2864`)
 
 				assert.Contains(t, actual, `section_http_request_count_by_hostname_total{hostname="www.example.com"} 7`)
 				assert.Contains(t, actual, `section_http_bytes_by_hostname_total{hostname="www.example.com"} 5875`)
@@ -438,24 +438,25 @@ func TestAddRequestUniqueHostnames(t *testing.T) {
 	// first unique hostname
 	labels["hostname"] = "a.foo.com"
 	addRequest(labels, logline)
-	assert.Equal(t, "a.foo.com", labels["hostname"])
+	assert.Contains(t, gatherP8sResponse(t), `section_http_request_count_by_hostname_total{hostname="a.foo.com"} 1`)
 	assert.Contains(t, uniqueHostnameMap, "a.foo.com")
 
 	// second unique hostname
 	labels["hostname"] = "b.foo.com"
 	addRequest(labels, logline)
-	assert.Equal(t, "b.foo.com", labels["hostname"])
+	assert.Contains(t, gatherP8sResponse(t), `section_http_request_count_by_hostname_total{hostname="b.foo.com"} 1`)
 	assert.Contains(t, uniqueHostnameMap, "b.foo.com")
 
 	// third unique hostname exceeds the maximum
 	labels["hostname"] = "c.foo.com"
 	addRequest(labels, logline)
-	assert.Equal(t, "max-hostnames-reached", labels["hostname"])
+	assert.Contains(t, gatherP8sResponse(t), `section_http_request_count_by_hostname_total{hostname="max-hostnames-reached"} 1`)
+	assert.NotContains(t, gatherP8sResponse(t), `section_http_request_count_by_hostname_total{hostname="c.foo.com"} 1`)
 	assert.NotContains(t, uniqueHostnameMap, "c.foo.com")
 
 	// first unique hostname still counted
 	labels["hostname"] = "a.foo.com"
 	addRequest(labels, logline)
-	assert.Equal(t, "a.foo.com", labels["hostname"], "first unique hostname, second request")
+	assert.Contains(t, gatherP8sResponse(t), `section_http_request_count_by_hostname_total{hostname="a.foo.com"} 2`)
 	assert.Contains(t, uniqueHostnameMap, "a.foo.com", "first unique hostname, second request")
 }
