@@ -24,6 +24,8 @@ const (
 	promeSubsystem     = "http"
 	promeNamespace     = "section"
 	hostnameLabel      = "hostname"
+
+	aeeHealthcheckLabel = "section_aee_healthcheck"
 )
 
 var (
@@ -144,6 +146,7 @@ func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 	}
 
 	requestLabels = sanitizedP8sLabels
+	requestLabels = append(requestLabels, aeeHealthcheckLabel)
 	if isGeoHashing {
 		requestLabels = append(requestLabels, geoHash)
 	}

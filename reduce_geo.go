@@ -129,6 +129,8 @@ func scrubGeoHash(labels map[string]string) map[string]string {
 		switch k {
 		case geoHash: // remove/scrub these keys
 			continue
+		case aeeHealthcheckLabel:
+			continue
 		default:
 			rv[k] = v
 		}
