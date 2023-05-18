@@ -7,11 +7,13 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	gojsonq "github.com/thedevsaddam/gojsonq/v2"
 	"golang.org/x/exp/slices"
 )
 
@@ -50,6 +52,8 @@ var (
 	maxUniqueHostnames = 1000
 
 	includeHostnameMetrics = false
+
+	aeeUserAgentRegex = regexp.MustCompile(`^aee/v.+`)
 )
 
 // Logf is a type that can be provided for outputing logs to specifi stream
@@ -66,10 +70,21 @@ func ShowLabels(log Logf) {
 	log("[INFO] requestLabels %+v", requestLabels)
 }
 
+func extractUserAgent(logline map[string]interface{}) string {
+	userAgent := gojsonq.New().FromInterface(logline).Find("request.http_user_agent")
+	if userAgent != nil {
+		if userAgentStr, ok := userAgent.(string); ok {
+			return userAgentStr
+		}
+	}
+	return ""
+}
+
 func isPageView(logline map[string]interface{}) bool {
 	// Count text/html 2XX requests as page-views
 	return strings.HasPrefix(fmt.Sprintf("%v", logline["status"]), "2") &&
-		strings.HasPrefix(strings.ToLower(fmt.Sprintf("%v", logline["content_type"])), "text/html")
+		strings.HasPrefix(strings.ToLower(fmt.Sprintf("%v", logline["content_type"])), "text/html") &&
+		!aeeUserAgentRegex.MatchString(extractUserAgent(logline))
 }
 
 func addRequest(labels map[string]string, logline map[string]interface{}) {
