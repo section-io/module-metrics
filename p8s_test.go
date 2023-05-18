@@ -99,7 +99,7 @@ func testCountersIncreaseWithoutHostnameLabel(t *testing.T, stdout *bytes.Buffer
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total 10`)
+	assert.Contains(t, actual, `section_http_request_count_total{section_aee_healthcheck="false"} 10`)
 	assert.Contains(t, actual, `section_http_bytes_total 6949`)
 
 	assert.NotContains(t, actual, `section_http_request_count_by_hostname_total`)
@@ -127,7 +127,7 @@ func testCountersIncrease(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total 10`)
+	assert.Contains(t, actual, `section_http_request_count_total{section_aee_healthcheck="false"} 10`)
 	assert.Contains(t, actual, `section_http_bytes_total 6949`)
 
 	assert.Contains(t, actual, `section_http_request_count_by_hostname_total{hostname="www.example.com"} 7`)
@@ -147,7 +147,7 @@ func testBytesAndBytesSentAreRead(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total 2`)
+	assert.Contains(t, actual, `section_http_request_count_total{section_aee_healthcheck="false"} 2`)
 	assert.Contains(t, actual, `section_http_bytes_total 30`)
 
 	assert.Contains(t, actual, `section_http_request_count_by_hostname_total{hostname="www.example.com"} 2`)
@@ -169,7 +169,7 @@ func testInvalidBytesAndBytesSent(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total 4`)
+	assert.Contains(t, actual, `section_http_request_count_total{section_aee_healthcheck="false"} 4`)
 	assert.Contains(t, actual, `section_http_bytes_total 30`)
 
 	assert.Contains(t, actual, `section_http_request_count_by_hostname_total{hostname="www.example.com"} 4`)
@@ -214,7 +214,7 @@ func testP8sServer(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := getP8sHTTPResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total 10`)
+	assert.Contains(t, actual, `section_http_request_count_total{section_aee_healthcheck="false"} 10`)
 	assert.Contains(t, actual, `section_http_bytes_total 6949`)
 
 	assert.Contains(t, actual, `section_http_request_count_by_hostname_total{hostname="www.example.com"} 7`)
@@ -234,7 +234,7 @@ func testAdditionalLabelsAreUsed(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total{http_accept_encoding="gzip"} 2`)
+	assert.Contains(t, actual, `section_http_request_count_total{http_accept_encoding="gzip",section_aee_healthcheck="false"} 2`)
 	assert.Contains(t, actual, `section_http_bytes_total{http_accept_encoding="gzip"} 30`)
 
 	assert.Contains(t, actual, `section_http_request_count_by_hostname_total{hostname="www.example.com"} 2`)
@@ -254,7 +254,7 @@ func testAdditionalLabelsWhenMissingFromLogs(t *testing.T, stdout *bytes.Buffer)
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total{missing_field=""} 2`)
+	assert.Contains(t, actual, `section_http_request_count_total{missing_field="",section_aee_healthcheck="false"} 2`)
 	assert.Contains(t, actual, `section_http_bytes_total{missing_field=""} 30`)
 
 	assert.Contains(t, actual, `section_http_request_count_by_hostname_total{hostname="www.example.com"} 2`)
@@ -273,8 +273,8 @@ func testNonStringProperties(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total{bool="",int="12345"} 1`)
-	assert.Contains(t, actual, `section_http_request_count_total{bool="true",int=""} 1`)
+	assert.Contains(t, actual, `section_http_request_count_total{bool="",int="12345",section_aee_healthcheck="false"} 1`)
+	assert.Contains(t, actual, `section_http_request_count_total{bool="true",int="",section_aee_healthcheck="false"} 1`)
 
 	assert.Contains(t, actual, `section_http_request_count_by_hostname_total{hostname="www.example.com"} 2`)
 }
@@ -333,8 +333,8 @@ func testContentTypeBucket(t *testing.T, stdout *bytes.Buffer) {
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_count_total{content_type_bucket="html"} 3`)
-	assert.Contains(t, actual, `section_http_request_count_total{content_type_bucket=""} 1`)
+	assert.Contains(t, actual, `section_http_request_count_total{content_type_bucket="html",section_aee_healthcheck="false"} 3`)
+	assert.Contains(t, actual, `section_http_request_count_total{content_type_bucket="",section_aee_healthcheck="false"} 1`)
 
 	assert.Contains(t, actual, `section_http_request_count_by_hostname_total{hostname="www.example.com"} 4`)
 }
@@ -433,7 +433,9 @@ func TestAddRequestUniqueHostnames(t *testing.T) {
 		"content_type": "text/plain",
 		"status":       "405",
 	}
-	labels := map[string]string{}
+	labels := map[string]string{
+		aeeHealthcheckLabel: "false",
+	}
 
 	// first unique hostname
 	labels["hostname"] = "a.foo.com"
@@ -459,4 +461,186 @@ func TestAddRequestUniqueHostnames(t *testing.T) {
 	addRequest(labels, logline)
 	assert.Contains(t, gatherP8sResponse(t), `section_http_request_count_by_hostname_total{hostname="a.foo.com"} 2`)
 	assert.Contains(t, uniqueHostnameMap, "a.foo.com", "first unique hostname, second request")
+}
+
+func Test_extractUserAgent(t *testing.T) {
+	type args struct {
+		logline map[string]interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "empty map",
+			args: args{
+				logline: map[string]interface{}{},
+			},
+			want: "",
+		},
+		{
+			name: "empty request block",
+			args: args{
+				logline: map[string]interface{}{
+					"request": map[string]interface{}{},
+				},
+			},
+			want: "",
+		},
+		{
+			name: "non-string user-agent",
+			args: args{
+				logline: map[string]interface{}{
+					"request": map[string]interface{}{
+						"http_user_agent": 13,
+					},
+				},
+			},
+			want: "",
+		},
+		{
+			name: "valid string user-agent",
+			args: args{
+				logline: map[string]interface{}{
+					"request": map[string]interface{}{
+						"http_user_agent": "aee/v1",
+					},
+				},
+			},
+			want: "aee/v1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := extractUserAgent(tt.args.logline); got != tt.want {
+				t.Errorf("extractUserAgent() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_isPageView(t *testing.T) {
+	const nonAeeUserAgent = "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm) Chrome/103.0.5060.134 Safari/537.36"
+	const aeeUserAgent = "aee/v27"
+	type args struct {
+		logline map[string]interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "2xx, text, aee",
+			args: args{
+				logline: map[string]interface{}{
+					"status":       "299",
+					"content_type": "text/html",
+					"request": map[string]interface{}{
+						"http_user_agent": aeeUserAgent,
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "2xx, text, non-aee",
+			args: args{
+				logline: map[string]interface{}{
+					"status":       "299",
+					"content_type": "text/html",
+					"request": map[string]interface{}{
+						"http_user_agent": nonAeeUserAgent,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "2xx, non-text, aee",
+			args: args{
+				logline: map[string]interface{}{
+					"status":       "299",
+					"content_type": "image/jpeg",
+					"request": map[string]interface{}{
+						"http_user_agent": aeeUserAgent,
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "2xx, non-text, non-aee",
+			args: args{
+				logline: map[string]interface{}{
+					"status":       "299",
+					"content_type": "image/jpeg",
+					"request": map[string]interface{}{
+						"http_user_agent": nonAeeUserAgent,
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "non-2xx, text, aee",
+			args: args{
+				logline: map[string]interface{}{
+					"status":       "301",
+					"content_type": "text/html",
+					"request": map[string]interface{}{
+						"http_user_agent": aeeUserAgent,
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "non-2xx, text, non-aee",
+			args: args{
+				logline: map[string]interface{}{
+					"status":       "301",
+					"content_type": "text/html",
+					"request": map[string]interface{}{
+						"http_user_agent": nonAeeUserAgent,
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "non-2xx, non-text, aee",
+			args: args{
+				logline: map[string]interface{}{
+					"status":       "301",
+					"content_type": "image/jpeg",
+					"request": map[string]interface{}{
+						"http_user_agent": aeeUserAgent,
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "non-2xx, non-text, non-aee",
+			args: args{
+				logline: map[string]interface{}{
+					"status":       "301",
+					"content_type": "image/jpeg",
+					"request": map[string]interface{}{
+						"http_user_agent": nonAeeUserAgent,
+					},
+				},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isPageView(tt.args.logline); got != tt.want {
+				t.Errorf("isPageView() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

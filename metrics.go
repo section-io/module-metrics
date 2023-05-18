@@ -203,6 +203,8 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 						})
 					}
 				}
+				isAeeHealthcheck := aeeUserAgentRegex.MatchString(extractUserAgent(logline))
+				labelValues[aeeHealthcheckLabel] = strconv.FormatBool(isAeeHealthcheck)
 				addRequest(labelValues, logline)
 			}
 
