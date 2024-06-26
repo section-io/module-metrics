@@ -38,6 +38,36 @@ func sanitizeLabelName(label string) string {
 	}
 }
 
+func breadthFirstSearch(data map[string]interface{}, key string) interface{} {
+	queue := []map[string]interface{}{data}
+
+	for len(queue) > 0 {
+		current := queue[0]
+		queue = queue[1:]
+
+		if val, ok := current[key]; ok {
+			return val
+		}
+
+		for _, v := range current {
+			if nestedMap, ok := v.(map[string]interface{}); ok {
+				queue = append(queue, nestedMap)
+			}
+		}
+	}
+
+	return nil
+}
+
+func statusBucket(status string) string {
+	if len(status) < 2 {
+		return status
+	}
+	base := status[:len(status)-2]
+	return base + "xx"
+
+}
+
 func sanitizeLabelValue(label string, value interface{}) string {
 
 	if value == nil || value == "" || value == "-" {
@@ -183,12 +213,19 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 				_, _ = fmt.Fprintf(errorWriter, "json.Unmarshal failed: %v", jsonErr)
 				jsonParseErrorTotal.Inc()
 			} else {
+				histogramLabelValues := map[string]string{}
 				labelValues := map[string]string{}
 
 				for _, label := range logFieldNames {
-					value := sanitizeLabelValue(label, logline[label])
-					label = sanitizeLabelName(label)
-					labelValues[label] = value
+					if strings.HasPrefix(label, "histogram_label_") {
+						label = strings.TrimPrefix(label, "histogram_label_")
+						value := sanitizeLabelValue(label, breadthFirstSearch(logline, label))
+						histogramLabelValues[label] = value
+					} else if !strings.HasPrefix(label, "histogram_") {
+						value := sanitizeLabelValue(label, logline[label])
+						label = sanitizeLabelName(label)
+						labelValues[label] = value
+					}
 				}
 				if isGeoHashing {
 					labelsWithGeoHash, coord := convertLatLonToHash(labelValues, logline)
@@ -206,6 +243,7 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 				isAeeHealthcheck := aeeUserAgentRegex.MatchString(extractUserAgent(logline))
 				labelValues[aeeHealthcheckLabel] = strconv.FormatBool(isAeeHealthcheck)
 				addRequest(labelValues, logline)
+				addHistogram(histogramLabelValues, logline)
 			}
 
 			line, err = reader.ReadBytes('\n')

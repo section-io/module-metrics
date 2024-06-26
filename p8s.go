@@ -39,10 +39,13 @@ var (
 	requestsByHostnameTotal *prometheus.CounterVec
 	bytesByHostnameTotal    *prometheus.CounterVec
 
+	responseTimeHistogram *prometheus.HistogramVec
+
 	logFieldNames      []string
 	sanitizedP8sLabels []string
 	withGeoLabel       []string
 	requestLabels      []string
+	histogramLabels    []string
 
 	p8sHTTPServerStarted = false
 
@@ -53,9 +56,13 @@ var (
 	uniqueHostnameMap  = make(map[string]struct{})
 	maxUniqueHostnames = 1000
 
-	includeHostnameMetrics = false
+	includeHostnameMetrics       = false
+	includeResponseTimeHistogram = false
 
-	aeeUserAgentRegex = regexp.MustCompile(`^aee/v.+`)
+	aeeUserAgentRegex     = regexp.MustCompile(`^aee/v.+`)
+	histogramSubjectLabel = "request_time"
+	histogramSubjectUnit  = "seconds"
+	histogramBuckets      = []float64{.5, 1, 5, 10, 25}
 )
 
 // Logf is a type that can be provided for outputing logs to specifi stream
@@ -70,6 +77,13 @@ func ShowLabels(log Logf) {
 	log("[INFO] sanitizedP8sLabels %+v", sanitizedP8sLabels)
 	log("[INFO] withGeoLabel %+v", withGeoLabel)
 	log("[INFO] requestLabels %+v", requestLabels)
+	log(
+		"[INFO] requestTimeHistogramLabels %+v histogramSubjectLabel %+v histogramSubjectUnit %+v histogramBuckets %+v",
+		histogramLabels,
+		histogramSubjectLabel,
+		histogramSubjectUnit,
+		histogramBuckets,
+	)
 }
 
 func extractUserAgent(logline map[string]interface{}) string {
@@ -125,17 +139,73 @@ func addRequest(labels map[string]string, logline map[string]interface{}) {
 	}
 }
 
+func addHistogram(labels map[string]string, logline map[string]interface{}) {
+	if includeResponseTimeHistogram {
+		subject := breadthFirstSearch(logline, histogramSubjectLabel)
+		if _, ok := labels["status"]; ok {
+			labels["status"] = statusBucket(labels["status"])
+		}
+		floatValue, err := strconv.ParseFloat(fmt.Sprintf("%v", subject), 64)
+		if err != nil {
+			return
+		}
+		switch histogramSubjectUnit {
+		case "seconds":
+			responseTimeHistogram.With(labels).Observe(floatValue)
+		case "microseconds":
+			responseTimeHistogram.With(labels).Observe(floatValue / 1000000.0)
+		default:
+			log.Fatalf("Unknown time unit %s, only take seconds, microseconds", histogramSubjectUnit)
+		}
+	}
+}
+
+func fetchHistogramLabels(label string) {
+	if strings.HasPrefix(label, "histogram_") {
+		includeResponseTimeHistogram = true
+	}
+	if strings.HasPrefix(label, "histogram_label_") {
+		label := strings.TrimPrefix(label, "histogram_label_")
+		if idx := slices.Index(histogramLabels, label); idx == -1 {
+			histogramLabels = append(histogramLabels, label)
+		}
+	} else if strings.HasPrefix(label, "histogram_subject_label_") {
+		histogramSubjectLabel = strings.TrimPrefix(label, "histogram_subject_label_")
+	} else if strings.HasPrefix(label, "histogram_subject_unit_") {
+		histogramSubjectUnit = strings.TrimPrefix(label, "histogram_subject_unit_")
+	} else if strings.HasPrefix(label, "histogram_buckets_") {
+		buckets := strings.Split(strings.TrimPrefix(label, "histogram_buckets_"), "_")
+		var numbers []float64
+		for _, part := range buckets {
+			number, err := strconv.ParseFloat(part, 64)
+			if err != nil {
+				log.Fatalf("Error converting %s to float64: %v\n", part, err)
+				numbers = histogramBuckets
+				break
+			}
+			numbers = append(numbers, number)
+		}
+		histogramBuckets = numbers
+	}
+}
+
 // InitMetrics sets up the prometheus registry and creates the metrics. Calling this
 // will reset any collected metrics. Returns the registry so additional metrics can be registered.
 func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 	logFieldNames = additionalLabels
 	includeHostnameMetrics = false
 
+	histogramLabels = []string{}
+
 	// iterate over any additionalLabels passed during metrics initialization & sanitize them (if we have rules defined)
 	sanitizedP8sLabels = []string{}
 	for _, label := range additionalLabels {
-		label = sanitizeLabelName(label)
-		sanitizedP8sLabels = append(sanitizedP8sLabels, label)
+		if strings.HasPrefix(label, "histogram_") {
+			fetchHistogramLabels(label)
+		} else {
+			label = sanitizeLabelName(label)
+			sanitizedP8sLabels = append(sanitizedP8sLabels, label)
+		}
 	}
 
 	// If the hostname label is included, generate the by_hostname metrics and remove the hostname label from the
@@ -183,6 +253,20 @@ func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 
 	registry = prometheus.NewRegistry()
 	registry.MustRegister(requestsTotal, bytesTotal, pageViewTotal, jsonParseErrorTotal)
+
+	if includeResponseTimeHistogram {
+		responseTimeHistogram = prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Namespace: promeNamespace,
+				Subsystem: promeSubsystem,
+				Name:      "request_duration_seconds",
+				Help:      "The latency of the HTTP requests",
+				Buckets:   histogramBuckets,
+			},
+			histogramLabels,
+		)
+		registry.MustRegister(responseTimeHistogram)
+	}
 
 	if includeHostnameMetrics {
 		requestsByHostnameTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
