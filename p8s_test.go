@@ -348,7 +348,10 @@ func testHistogramStatusBucket_seconds(t *testing.T, stdout *bytes.Buffer) {
 		`{"time":"2019-06-20T01:34:36+00:00","request_time":"3.069","hostname":"www.example.com","status":"200","content_type": "-", "bytes":"20","request":"GET /a/path HTTP/1.1","http_accept_encoding":"gzip","http_x_forwarded_proto":"https","http_upgrade":"-","http_connection":"-","body_bytes_sent":"0","upstream_label":"default","upstream_addr":"198.51.100.1:443","upstream_status":"304","upstream_request_connection":"","upstream_request_host":"in.example.com","upstream_header_time":"0.069","upstream_connect_time":"0.052","upstream_response_time":"0.069","upstream_response_length":"0","upstream_bytes_received":"288","upstream_http_content_type":"-","upstream_http_cache_control":"max-age=60","upstream_http_content_length":"-","upstream_http_content_encoding":"-","upstream_http_transfer_encoding":"-","sent_http_content_length":"-","sent_http_content_encoding":"-","sent_http_transfer_encoding":"-","section-io-id":"451e230222237f722eb49324d47142f6"}`,
 	}
 
-	InitMetrics("histogram_label_status", "histogram_subject_label_request_time", "histogram_subject_unit_seconds")
+	Configure(&Configuration{
+		RequestTimeLogUnit: LogUnitSeconds,
+	})
+	InitMetrics("histogram_label_status", "histogram_subject_label_request_time")
 
 	writeLogs(t, logs)
 
@@ -366,7 +369,10 @@ func testHistogramStatusBucket_microseconds(t *testing.T, stdout *bytes.Buffer) 
 		`{"time":"2024-06-25T16:24:42+0000","time_taken_microseconds":"113706","request":"GET /ex/image-1.jpeg HTTP/1.1","status":"200","bytes":"104819","response_body_bytes":"104011","content_type":"image/jpeg","hostname":"lili-main.wnet.ninja","referrer":"https://lili-main.wnet.ninja/ex/echnidna.html","useragent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36","http_x_forwarded_proto":"https","section_io_tag":"","section_io_id":"eee5ca48eb43cd76fbce992f78546ce7","varnish_handling": "pass","varnish_hitmiss": "miss","varnish_vxid": "1005096","varnish_hit_vxid": "-"}`,
 	}
 
-	InitMetrics("histogram_label_status", "histogram_subject_label_time_taken_microseconds", "histogram_subject_unit_microseconds")
+	Configure(&Configuration{
+		RequestTimeLogUnit: LogUnitMicroseconds,
+	})
+	InitMetrics("histogram_label_status", "histogram_subject_label_time_taken_microseconds")
 
 	writeLogs(t, logs)
 

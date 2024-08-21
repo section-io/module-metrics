@@ -61,7 +61,6 @@ var (
 
 	aeeUserAgentRegex     = regexp.MustCompile(`^aee/v.+`)
 	histogramSubjectLabel = "request_time"
-	histogramSubjectUnit  = "seconds"
 )
 
 // Logf is a type that can be provided for outputing logs to specifi stream
@@ -77,10 +76,9 @@ func ShowLabels(log Logf) {
 	log("[INFO] withGeoLabel %+v", withGeoLabel)
 	log("[INFO] requestLabels %+v", requestLabels)
 	log(
-		"[INFO] requestTimeHistogramLabels %+v histogramSubjectLabel %+v histogramSubjectUnit %+v",
+		"[INFO] requestTimeHistogramLabels %+v histogramSubjectLabel %+v",
 		histogramLabels,
 		histogramSubjectLabel,
-		histogramSubjectUnit,
 	)
 }
 
@@ -147,14 +145,8 @@ func addHistogram(labels map[string]string, logline map[string]interface{}) {
 		if err != nil {
 			return
 		}
-		switch histogramSubjectUnit {
-		case "seconds":
-			responseTimeHistogram.With(labels).Observe(floatValue)
-		case "microseconds":
-			responseTimeHistogram.With(labels).Observe(floatValue / 1000000.0)
-		default:
-			log.Fatalf("Unknown time unit %s, only take seconds, microseconds", histogramSubjectUnit)
-		}
+		floatValue = floatValue * float64(defaultConfig.RequestTimeLogUnit)
+		responseTimeHistogram.With(labels).Observe(floatValue)
 	}
 }
 
@@ -169,8 +161,6 @@ func fetchHistogramLabels(label string) {
 		}
 	} else if strings.HasPrefix(label, "histogram_subject_label_") {
 		histogramSubjectLabel = strings.TrimPrefix(label, "histogram_subject_label_")
-	} else if strings.HasPrefix(label, "histogram_subject_unit_") {
-		histogramSubjectUnit = strings.TrimPrefix(label, "histogram_subject_unit_")
 	}
 }
 
