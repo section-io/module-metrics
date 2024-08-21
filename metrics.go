@@ -210,7 +210,6 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 			var logline map[string]interface{}
 			jsonErr := json.Unmarshal(line, &logline)
 			if jsonErr != nil {
-				_, _ = fmt.Fprintf(errorWriter, "json.Unmarshal failed: %v", jsonErr)
 				jsonParseErrorTotal.Inc()
 			} else {
 				histogramLabelValues := map[string]string{}
