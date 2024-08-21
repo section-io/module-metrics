@@ -62,7 +62,6 @@ var (
 	aeeUserAgentRegex     = regexp.MustCompile(`^aee/v.+`)
 	histogramSubjectLabel = "request_time"
 	histogramSubjectUnit  = "seconds"
-	histogramBuckets      = []float64{.5, 1, 5, 10, 25}
 )
 
 // Logf is a type that can be provided for outputing logs to specifi stream
@@ -78,11 +77,10 @@ func ShowLabels(log Logf) {
 	log("[INFO] withGeoLabel %+v", withGeoLabel)
 	log("[INFO] requestLabels %+v", requestLabels)
 	log(
-		"[INFO] requestTimeHistogramLabels %+v histogramSubjectLabel %+v histogramSubjectUnit %+v histogramBuckets %+v",
+		"[INFO] requestTimeHistogramLabels %+v histogramSubjectLabel %+v histogramSubjectUnit %+v",
 		histogramLabels,
 		histogramSubjectLabel,
 		histogramSubjectUnit,
-		histogramBuckets,
 	)
 }
 
@@ -173,19 +171,6 @@ func fetchHistogramLabels(label string) {
 		histogramSubjectLabel = strings.TrimPrefix(label, "histogram_subject_label_")
 	} else if strings.HasPrefix(label, "histogram_subject_unit_") {
 		histogramSubjectUnit = strings.TrimPrefix(label, "histogram_subject_unit_")
-	} else if strings.HasPrefix(label, "histogram_buckets_") {
-		buckets := strings.Split(strings.TrimPrefix(label, "histogram_buckets_"), "_")
-		var numbers []float64
-		for _, part := range buckets {
-			number, err := strconv.ParseFloat(part, 64)
-			if err != nil {
-				log.Fatalf("Error converting %s to float64: %v\n", part, err)
-				numbers = histogramBuckets
-				break
-			}
-			numbers = append(numbers, number)
-		}
-		histogramBuckets = numbers
 	}
 }
 
@@ -261,7 +246,7 @@ func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 				Subsystem: promeSubsystem,
 				Name:      "request_duration_seconds",
 				Help:      "The latency of the HTTP requests",
-				Buckets:   histogramBuckets,
+				Buckets:   []float64{.5, 1, 5, 10, 25},
 			},
 			histogramLabels,
 		)
