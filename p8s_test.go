@@ -349,9 +349,10 @@ func testHistogramStatusBucket_seconds(t *testing.T, stdout *bytes.Buffer) {
 	}
 
 	Configure(&Configuration{
-		RequestTimeLogUnit: LogUnitSeconds,
+		RequestTimeLogField: FirstLevelLogField("request_time"),
+		RequestTimeLogUnit:  LogUnitSeconds,
 	})
-	InitMetrics("histogram_label_status", "histogram_subject_label_request_time")
+	InitMetrics("histogram_label_status")
 
 	writeLogs(t, logs)
 
@@ -366,13 +367,14 @@ func testHistogramStatusBucket_seconds(t *testing.T, stdout *bytes.Buffer) {
 func testHistogramStatusBucket_microseconds(t *testing.T, stdout *bytes.Buffer) {
 
 	logs := []string{
-		`{"time":"2024-06-25T16:24:42+0000","time_taken_microseconds":"113706","request":"GET /ex/image-1.jpeg HTTP/1.1","status":"200","bytes":"104819","response_body_bytes":"104011","content_type":"image/jpeg","hostname":"lili-main.wnet.ninja","referrer":"https://lili-main.wnet.ninja/ex/echnidna.html","useragent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36","http_x_forwarded_proto":"https","section_io_tag":"","section_io_id":"eee5ca48eb43cd76fbce992f78546ce7","varnish_handling": "pass","varnish_hitmiss": "miss","varnish_vxid": "1005096","varnish_hit_vxid": "-"}`,
+		`{"time":"2024-06-25T16:24:42+0000","inner":{"time_taken_microseconds":"113706"},"request":"GET /ex/image-1.jpeg HTTP/1.1","status":"200","bytes":"104819","response_body_bytes":"104011","content_type":"image/jpeg","hostname":"lili-main.wnet.ninja","referrer":"https://lili-main.wnet.ninja/ex/echnidna.html","useragent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36","http_x_forwarded_proto":"https","section_io_tag":"","section_io_id":"eee5ca48eb43cd76fbce992f78546ce7","varnish_handling": "pass","varnish_hitmiss": "miss","varnish_vxid": "1005096","varnish_hit_vxid": "-"}`,
 	}
 
 	Configure(&Configuration{
-		RequestTimeLogUnit: LogUnitMicroseconds,
+		RequestTimeLogField: SecondLevelLogField("inner", "time_taken_microseconds"),
+		RequestTimeLogUnit:  LogUnitMicroseconds,
 	})
-	InitMetrics("histogram_label_status", "histogram_subject_label_time_taken_microseconds")
+	InitMetrics("histogram_label_status")
 
 	writeLogs(t, logs)
 

@@ -56,11 +56,9 @@ var (
 	uniqueHostnameMap  = make(map[string]struct{})
 	maxUniqueHostnames = 1000
 
-	includeHostnameMetrics       = false
-	includeResponseTimeHistogram = false
+	includeHostnameMetrics = false
 
-	aeeUserAgentRegex     = regexp.MustCompile(`^aee/v.+`)
-	histogramSubjectLabel = "request_time"
+	aeeUserAgentRegex = regexp.MustCompile(`^aee/v.+`)
 )
 
 // Logf is a type that can be provided for outputing logs to specifi stream
@@ -76,9 +74,8 @@ func ShowLabels(log Logf) {
 	log("[INFO] withGeoLabel %+v", withGeoLabel)
 	log("[INFO] requestLabels %+v", requestLabels)
 	log(
-		"[INFO] requestTimeHistogramLabels %+v histogramSubjectLabel %+v",
+		"[INFO] requestTimeHistogramLabels %+v",
 		histogramLabels,
-		histogramSubjectLabel,
 	)
 }
 
@@ -136,8 +133,8 @@ func addRequest(labels map[string]string, logline map[string]interface{}) {
 }
 
 func addHistogram(labels map[string]string, logline map[string]interface{}) {
-	if includeResponseTimeHistogram {
-		subject := breadthFirstSearch(logline, histogramSubjectLabel)
+	if defaultConfig.RequestTimeLogField != nil && defaultConfig.RequestTimeLogUnit != 0 {
+		subject := defaultConfig.RequestTimeLogField(logline)
 		if _, ok := labels["status"]; ok {
 			labels["status"] = statusBucket(labels["status"])
 		}
@@ -151,16 +148,11 @@ func addHistogram(labels map[string]string, logline map[string]interface{}) {
 }
 
 func fetchHistogramLabels(label string) {
-	if strings.HasPrefix(label, "histogram_") {
-		includeResponseTimeHistogram = true
-	}
 	if strings.HasPrefix(label, "histogram_label_") {
 		label := strings.TrimPrefix(label, "histogram_label_")
 		if idx := slices.Index(histogramLabels, label); idx == -1 {
 			histogramLabels = append(histogramLabels, label)
 		}
-	} else if strings.HasPrefix(label, "histogram_subject_label_") {
-		histogramSubjectLabel = strings.TrimPrefix(label, "histogram_subject_label_")
 	}
 }
 
@@ -229,7 +221,7 @@ func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 	registry = prometheus.NewRegistry()
 	registry.MustRegister(requestsTotal, bytesTotal, pageViewTotal, jsonParseErrorTotal)
 
-	if includeResponseTimeHistogram {
+	if defaultConfig.RequestTimeLogField != nil && defaultConfig.RequestTimeLogUnit > 0 {
 		responseTimeHistogram = prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
 				Namespace: promeNamespace,
