@@ -352,16 +352,16 @@ func testHistogramStatusBucket_seconds(t *testing.T, stdout *bytes.Buffer) {
 		RequestTimeLogField: FirstLevelLogField("request_time"),
 		RequestTimeLogUnit:  LogUnitSeconds,
 	})
-	InitMetrics("histogram_label_status")
+	InitMetrics("status")
 
 	writeLogs(t, logs)
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_duration_seconds_bucket{status="2xx",le="0.5"} 1`)
-	assert.Contains(t, actual, `section_http_request_duration_seconds_bucket{status="2xx",le="1"} 1`)
-	assert.Contains(t, actual, `section_http_request_duration_seconds_bucket{status="2xx",le="5"} 3`)
-	assert.Contains(t, actual, `section_http_request_duration_seconds_bucket{status="4xx",le="5"} 1`)
+	assert.Contains(t, actual, `section_http_request_duration_seconds_bucket{status_bucket="2--",le="0.5"} 1`)
+	assert.Contains(t, actual, `section_http_request_duration_seconds_bucket{status_bucket="2--",le="1"} 1`)
+	assert.Contains(t, actual, `section_http_request_duration_seconds_bucket{status_bucket="2--",le="5"} 3`)
+	assert.Contains(t, actual, `section_http_request_duration_seconds_bucket{status_bucket="4--",le="5"} 1`)
 }
 
 func testHistogramStatusBucket_microseconds(t *testing.T, stdout *bytes.Buffer) {
@@ -374,13 +374,13 @@ func testHistogramStatusBucket_microseconds(t *testing.T, stdout *bytes.Buffer) 
 		RequestTimeLogField: SecondLevelLogField("inner", "time_taken_microseconds"),
 		RequestTimeLogUnit:  LogUnitMicroseconds,
 	})
-	InitMetrics("histogram_label_status")
+	InitMetrics("status")
 
 	writeLogs(t, logs)
 
 	actual := gatherP8sResponse(t)
 
-	assert.Contains(t, actual, `section_http_request_duration_seconds_bucket{status="2xx",le="0.5"} 1`)
+	assert.Contains(t, actual, `section_http_request_duration_seconds_bucket{status_bucket="2--",le="0.5"} 1`)
 }
 
 func TestReaderRunning(t *testing.T) {

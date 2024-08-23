@@ -28,6 +28,10 @@ const (
 	aeeHealthcheckLabel = "section_aee_healthcheck"
 )
 
+type logObserver interface {
+	Observe(requestLabels map[string]string, logline map[string]interface{})
+}
+
 var (
 	jsonParseErrorTotal prometheus.Counter
 	pageViewTotal       prometheus.Counter
@@ -39,13 +43,12 @@ var (
 	requestsByHostnameTotal *prometheus.CounterVec
 	bytesByHostnameTotal    *prometheus.CounterVec
 
-	responseTimeHistogram *prometheus.HistogramVec
+	requestTimeObserver logObserver
 
 	logFieldNames      []string
 	sanitizedP8sLabels []string
 	withGeoLabel       []string
 	requestLabels      []string
-	histogramLabels    []string
 
 	p8sHTTPServerStarted = false
 
@@ -73,10 +76,6 @@ func ShowLabels(log Logf) {
 	log("[INFO] sanitizedP8sLabels %+v", sanitizedP8sLabels)
 	log("[INFO] withGeoLabel %+v", withGeoLabel)
 	log("[INFO] requestLabels %+v", requestLabels)
-	log(
-		"[INFO] requestTimeHistogramLabels %+v",
-		histogramLabels,
-	)
 }
 
 func extractUserAgent(logline map[string]interface{}) string {
@@ -132,47 +131,17 @@ func addRequest(labels map[string]string, logline map[string]interface{}) {
 	}
 }
 
-func addHistogram(labels map[string]string, logline map[string]interface{}) {
-	if defaultConfig.RequestTimeLogField != nil && defaultConfig.RequestTimeLogUnit != 0 {
-		subject := defaultConfig.RequestTimeLogField(logline)
-		if _, ok := labels["status"]; ok {
-			labels["status"] = statusBucket(labels["status"])
-		}
-		floatValue, err := strconv.ParseFloat(fmt.Sprintf("%v", subject), 64)
-		if err != nil {
-			return
-		}
-		floatValue = floatValue * float64(defaultConfig.RequestTimeLogUnit)
-		responseTimeHistogram.With(labels).Observe(floatValue)
-	}
-}
-
-func fetchHistogramLabels(label string) {
-	if strings.HasPrefix(label, "histogram_label_") {
-		label := strings.TrimPrefix(label, "histogram_label_")
-		if idx := slices.Index(histogramLabels, label); idx == -1 {
-			histogramLabels = append(histogramLabels, label)
-		}
-	}
-}
-
 // InitMetrics sets up the prometheus registry and creates the metrics. Calling this
 // will reset any collected metrics. Returns the registry so additional metrics can be registered.
 func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 	logFieldNames = additionalLabels
 	includeHostnameMetrics = false
 
-	histogramLabels = []string{}
-
 	// iterate over any additionalLabels passed during metrics initialization & sanitize them (if we have rules defined)
 	sanitizedP8sLabels = []string{}
 	for _, label := range additionalLabels {
-		if strings.HasPrefix(label, "histogram_") {
-			fetchHistogramLabels(label)
-		} else {
-			label = sanitizeLabelName(label)
-			sanitizedP8sLabels = append(sanitizedP8sLabels, label)
-		}
+		label = sanitizeLabelName(label)
+		sanitizedP8sLabels = append(sanitizedP8sLabels, label)
 	}
 
 	// If the hostname label is included, generate the by_hostname metrics and remove the hostname label from the
@@ -222,7 +191,16 @@ func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 	registry.MustRegister(requestsTotal, bytesTotal, pageViewTotal, jsonParseErrorTotal)
 
 	if defaultConfig.RequestTimeLogField != nil && defaultConfig.RequestTimeLogUnit > 0 {
-		responseTimeHistogram = prometheus.NewHistogramVec(
+		// allow-list for histogram labels
+		histogramLabels := []string{}
+		for _, label := range requestLabels {
+			histogramLabel := translateRequestLabelToHistogramLabel(label)
+			if histogramLabel != "" {
+				histogramLabels = append(histogramLabels, histogramLabel)
+			}
+		}
+
+		responseTimeHistogram := prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
 				Namespace: promeNamespace,
 				Subsystem: promeSubsystem,
@@ -233,6 +211,10 @@ func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 			histogramLabels,
 		)
 		registry.MustRegister(responseTimeHistogram)
+
+		requestTimeObserver = newRequestTimeProcessor(responseTimeHistogram, defaultConfig.RequestTimeLogField, defaultConfig.RequestTimeLogUnit)
+	} else {
+		requestTimeObserver = &noopRequestTimeProcessor{}
 	}
 
 	if includeHostnameMetrics {
