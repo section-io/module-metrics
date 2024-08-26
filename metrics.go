@@ -38,6 +38,14 @@ func sanitizeLabelName(label string) string {
 	}
 }
 
+func statusBucket(status string) string {
+	if len(status) != 3 {
+		return ""
+	}
+	base := status[:len(status)-2]
+	return base + "--"
+}
+
 func sanitizeLabelValue(label string, value interface{}) string {
 
 	if value == nil || value == "" || value == "-" {
@@ -180,7 +188,6 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 			var logline map[string]interface{}
 			jsonErr := json.Unmarshal(line, &logline)
 			if jsonErr != nil {
-				_, _ = fmt.Fprintf(errorWriter, "json.Unmarshal failed: %v", jsonErr)
 				jsonParseErrorTotal.Inc()
 			} else {
 				labelValues := map[string]string{}
@@ -206,6 +213,7 @@ func StartReader(file io.ReadCloser, output io.Writer, errorWriter io.Writer) {
 				isAeeHealthcheck := aeeUserAgentRegex.MatchString(extractUserAgent(logline))
 				labelValues[aeeHealthcheckLabel] = strconv.FormatBool(isAeeHealthcheck)
 				addRequest(labelValues, logline)
+				requestTimeObserver.Observe(labelValues, logline)
 			}
 
 			line, err = reader.ReadBytes('\n')

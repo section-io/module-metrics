@@ -28,6 +28,10 @@ const (
 	aeeHealthcheckLabel = "section_aee_healthcheck"
 )
 
+type logObserver interface {
+	Observe(requestLabels map[string]string, logline map[string]interface{})
+}
+
 var (
 	jsonParseErrorTotal prometheus.Counter
 	pageViewTotal       prometheus.Counter
@@ -38,6 +42,8 @@ var (
 
 	requestsByHostnameTotal *prometheus.CounterVec
 	bytesByHostnameTotal    *prometheus.CounterVec
+
+	requestTimeObserver logObserver
 
 	logFieldNames      []string
 	sanitizedP8sLabels []string
@@ -183,6 +189,33 @@ func InitMetrics(additionalLabels ...string) *prometheus.Registry {
 
 	registry = prometheus.NewRegistry()
 	registry.MustRegister(requestsTotal, bytesTotal, pageViewTotal, jsonParseErrorTotal)
+
+	if defaultConfig.RequestTimeLogField != nil && defaultConfig.RequestTimeLogUnit > 0 {
+		// allow-list for histogram labels
+		histogramLabels := []string{}
+		for _, label := range requestLabels {
+			histogramLabel := translateRequestLabelToHistogramLabel(label)
+			if histogramLabel != "" {
+				histogramLabels = append(histogramLabels, histogramLabel)
+			}
+		}
+
+		responseTimeHistogram := prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Namespace: promeNamespace,
+				Subsystem: promeSubsystem,
+				Name:      "request_duration_seconds",
+				Help:      "The latency of the HTTP requests",
+				Buckets:   []float64{.5, 1, 5, 10, 25},
+			},
+			histogramLabels,
+		)
+		registry.MustRegister(responseTimeHistogram)
+
+		requestTimeObserver = newRequestTimeProcessor(responseTimeHistogram, defaultConfig.RequestTimeLogField, defaultConfig.RequestTimeLogUnit)
+	} else {
+		requestTimeObserver = &noopRequestTimeProcessor{}
+	}
 
 	if includeHostnameMetrics {
 		requestsByHostnameTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
